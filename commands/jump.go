@@ -13,16 +13,10 @@ func JumpCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 		b.BState.SendMessage(c.ChannelID, "what")
 		return
 	}
-	if idx > len(b.Queue) {
+	if idx > len(b.Queue.GetEntries()) {
 		b.BState.SendMessage(c.ChannelID, "out of bounds")
 		return
 	}
-	if b.PlayData != nil {
-		b.QueueIndex = idx - 1
-		b.PlayData.Stop()
-	} else {
-		b.QueueIndex = idx
-		b.ComChan <- bot.PlaySong
-	}
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.Jump).SetIndex(idx)
 
 }

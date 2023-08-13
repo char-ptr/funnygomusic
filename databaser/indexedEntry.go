@@ -2,7 +2,6 @@ package databaser
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -15,9 +14,9 @@ import (
 
 type IndexEntry struct {
 	gorm.Model
-	Title     string
-	Artist    string
-	Album     string
+	Title     string `gorm:"index"`
+	Artist    string `gorm:"index"`
+	Album     string `gorm:"index"`
 	Path      string
 	Length    time.Duration
 	CanoTrack int
@@ -49,7 +48,8 @@ func NewIndexEntryFromPath(path string) (IndexEntry, error) {
 }
 
 func ParseRawOutputToIndex(raw *RawProbeOutput, path string) IndexEntry {
-	parsedLen, _ := time.ParseDuration(fmt.Sprintf("%ss", raw.Format.Duration))
+	plen1m, _ := strconv.ParseFloat(raw.Format.Duration, 64)
+	parsedLen := time.Duration(plen1m) * time.Second
 	parsedTrack, _ := strconv.Atoi(raw.Format.Tags.Track)
 	return IndexEntry{
 		Title:     raw.Format.Tags.Title,
@@ -59,6 +59,10 @@ func ParseRawOutputToIndex(raw *RawProbeOutput, path string) IndexEntry {
 		Length:    parsedLen,
 		CanoTrack: parsedTrack,
 	}
+}
+
+func CommitIndexToDb(entry *IndexEntry, db *gorm.DB) {
+	db.Create(entry)
 }
 
 type RawProbeOutput struct {

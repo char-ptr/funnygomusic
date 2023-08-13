@@ -6,7 +6,5 @@ import (
 )
 
 func ResumeCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	if b.PlayData.Paused {
-		b.PlayData.Resume()
-	}
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentResume)
 }

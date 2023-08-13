@@ -14,5 +14,6 @@ func SeekCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 		log.Println("failed to parse timer", err)
 		return
 	}
-	b.PlayData.Seek(uint64(timer * 1000))
+	asSecs := uint64(timer * 1000)
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentSeek).SetSeek(int(asSecs))
 }

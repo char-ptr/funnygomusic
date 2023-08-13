@@ -33,11 +33,11 @@ func main() {
 	for _, u := range alusers {
 		b.AllowList = append(b.AllowList, strconv.Itoa(int(u.UserId)))
 	}
+	PlCtx := context.WithoutCancel(ctx)
+	go b.Queue.Start(PlCtx)
 
-	go b.PlayManagerStart()
-
-	currentState.AddHandler(func(c *gateway.ReadyEvent) { events.OnReady(c, &b) })
-	currentState.AddHandler(func(c *gateway.MessageCreateEvent) { events.OnMessage(c, &b) })
+	currentState.AddHandler(func(c *gateway.ReadyEvent) { events.OnReady(c, b) })
+	currentState.AddHandler(func(c *gateway.MessageCreateEvent) { events.OnMessage(c, b) })
 
 	// start connection
 	if err := currentState.Open(ctx); err != nil {

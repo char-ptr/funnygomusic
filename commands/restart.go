@@ -6,5 +6,5 @@ import (
 )
 
 func RestartCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	b.PlayData.Restart()
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentRestart)
 }

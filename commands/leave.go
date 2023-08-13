@@ -6,11 +6,7 @@ import (
 )
 
 func LeaveCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	if b.PlayData != nil {
-		b.PlayData.Stop()
-		b.PlayData = nil
-	}
-	b.ClearQueue()
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentStop)
 	b.VoiceSes.Leave(b.Ctx)
 	b.VoiceSes = nil
 }

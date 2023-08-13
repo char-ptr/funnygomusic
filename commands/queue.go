@@ -5,7 +5,7 @@ import (
 	"funnygomusic/bot"
 	"funnygomusic/utils"
 	"github.com/diamondburned/arikawa/v3/gateway"
-	"golang.org/x/exp/slices"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -19,34 +19,36 @@ const (
 )
 
 func ClearQueue(b *bot.Botter) {
-	if b.PlayData != nil {
-		b.PlayData.Stop()
-		b.PlayData = nil
-	}
-	b.ClearQueue()
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistClear)
+	//b.BState.SendMessage(b.Ctx, "cleared queue")
 }
 
 func RemoveEntry(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
-	if idx > len(b.Queue) {
+	tmpQueue := b.Queue.GetEntries()
+	if idx > len(tmpQueue) {
 		b.BState.SendMessage(c.ChannelID, "out of bounds")
 		return
 	}
-	whatsThere := b.Queue[idx]
-	b.Queue = slices.Delete(b.Queue, idx, idx+1)
+	whatsThere := tmpQueue[idx]
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistRemove).SetIndex(idx)
 	b.BState.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
 }
 
 func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
-	if len(b.Queue) == 0 {
+	tmpQueue := b.Queue.GetEntries()
+	if len(tmpQueue) == 0 {
 		b.BState.SendMessage(c.ChannelID, "nothing in queue")
 		return
 	}
 	msgCnt := "queue:```"
-	for k, v := range b.Queue {
+	for k, v := range tmpQueue {
 		msgCnt += fmt.Sprintf("%d. %s - %s\n", k, v.Artist, v.Title)
 	}
 	msgCnt += "```"
-	b.BState.SendMessage(c.ChannelID, msgCnt)
+	_, err := b.BState.SendMessage(c.ChannelID, msgCnt)
+	if err != nil {
+		log.Println(err)
+	}
 
 }
 

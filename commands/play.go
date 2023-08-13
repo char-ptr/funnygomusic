@@ -42,10 +42,10 @@ func PlayCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 	if b.VoiceSes == nil {
 		utils.JoinUsersVc(b, c)
 	}
-	quelen := len(b.Queue)
+	quelen := len(b.Queue.GetEntries())
 	entry := databaser.NewIndexEntryFromPathDnc(pathTo)
-	b.Queue = append(b.Queue, entry)
-	b.ComChan <- bot.NewItem
+	go b.Db.Create(&entry)
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistAdd).SetEntry(&entry)
 	_, err := b.BState.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", entry.Title, quelen))
 	if err != nil {
 		log.Println(err)

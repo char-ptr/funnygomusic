@@ -38,6 +38,7 @@ func OnMessage(c *gateway.MessageCreateEvent, b *bot.Botter) {
 	for k, v := range Commands {
 		if k == command {
 			v(c, b, commandArgs)
+			return
 		}
 	}
 }

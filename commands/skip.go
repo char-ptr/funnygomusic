@@ -6,5 +6,5 @@ import (
 )
 
 func SkipCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	b.PlayData.Stop()
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentSkip)
 }

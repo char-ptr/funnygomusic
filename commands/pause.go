@@ -6,8 +6,5 @@ import (
 )
 
 func PauseCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	if b.PlayData.Playing {
-		b.PlayData.Pause()
-	}
-	b.PlayData.Paused = true
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentPause)
 }
