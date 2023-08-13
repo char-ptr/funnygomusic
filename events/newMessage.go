@@ -180,7 +180,10 @@ func OnMessage(c *gateway.MessageCreateEvent, b *bot.Botter) {
 		}
 	case "fuckoff":
 		{
-			b.PlayData.Stop()
+			if b.PlayData != nil {
+				b.PlayData.Stop()
+				b.PlayData = nil
+			}
 			b.ClearQueue()
 			b.VoiceSes.Leave(b.Ctx)
 		}
@@ -200,7 +203,10 @@ func OnMessage(c *gateway.MessageCreateEvent, b *bot.Botter) {
 		}
 	case "clear":
 		{
-			b.PlayData.Stop()
+			if b.PlayData != nil {
+				b.PlayData.Stop()
+				b.PlayData = nil
+			}
 			b.ClearQueue()
 		}
 	case "remove":

@@ -58,7 +58,6 @@ func (b *Botter) PlayManagerStart() {
 			{
 				if b.awaitSong {
 					b.awaitSong = false
-					println("reqnew")
 					go b.requestPlaySong()
 				}
 			}
@@ -77,11 +76,12 @@ func (b *Botter) PlayManagerStart() {
 				if b.QueueIndex >= len(b.Queue) {
 					b.awaitSong = true
 					b.PlayData = nil
-					println("queue size too small..")
+					log.Printf("queue size too small.. [%d:%d]", b.QueueIndex, len(b.Queue))
 					b.BState.SendMessage(b.SubChan, "Queue has ended")
 
 					continue
 				}
+				b.awaitSong = false
 				log.Println("request to play song")
 				b.NewPlayData(b.Queue[b.QueueIndex])
 				b.PlayData.Start()
@@ -91,8 +91,9 @@ func (b *Botter) PlayManagerStart() {
 	}
 }
 func (b *Botter) ClearQueue() {
-	b.Queue = []QueueEntry{}
-	b.QueueIndex = 0
+	b.Queue = nil
+	var newi int
+	b.QueueIndex = newi
 }
 func (b *Botter) requestPlaySong() {
 	b.ComChan <- PlaySong

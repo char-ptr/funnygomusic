@@ -86,7 +86,7 @@ func (p *PlayingData) PipeIntoStream() error {
 		println("finished playing")
 		p.Stop()
 		p.bot.ComChan <- SongEnded
-	} else {
+	} else if !p.Paused {
 		p.Start()
 	}
 	return nil
@@ -103,12 +103,12 @@ func (p *PlayingData) Restart() {
 }
 func (p *PlayingData) Pause() {
 	p.time_played += uint64(time.Since(p.time_started).Milliseconds())
-	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.NotSpeaking)
-	defer p.outstm.Close()
-	p.cmd.Cancel()
-	p.time_started = time.Now()
-	p.Playing = false
 	p.Paused = true
+	p.Playing = false
+	p.cmd.Cancel()
+	p.outstm.Close()
+	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.NotSpeaking)
+	p.time_started = time.Now()
 
 }
 
