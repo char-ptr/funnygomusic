@@ -1,2 +1,2 @@
 # funny go music
-a discord selfbot to play locally stored music.
+a discord to play locally stored music.
