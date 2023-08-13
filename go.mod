@@ -9,12 +9,16 @@ require (
 )
 
 require (
-	github.com/dhowden/tag v0.0.0-20230630033851-978a0926ee25 // indirect
 	github.com/gorilla/schema v1.2.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
+	gorm.io/driver/sqlite v1.5.2
+	gorm.io/gorm v1.25.3
 )

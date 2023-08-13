@@ -2,40 +2,48 @@ package main
 
 import (
 	"context"
+	"funnygomusic/databaser"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"funnygomusic/bot"
+	_ "funnygomusic/databaser"
 	"funnygomusic/events"
 
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"github.com/diamondburned/arikawa/v3/state"
 )
 
-var Bot bot.Botter = bot.Botter{}
-
 func main() {
 
 	id := gateway.DefaultIdentifier(os.Getenv("BOT_TOKEN"))
 	id.Properties.OS = "iOS"
 	id.Properties.Browser = "Discord iOS"
-
-	current_state := state.NewWithIdentifier(id)
+	currentState := state.NewWithIdentifier(id)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
-	Bot = bot.NewBotter(current_state, &ctx)
-	Bot.AllowList = append(Bot.AllowList, os.Getenv("BOT_OWNER"))
-	go Bot.PlayManagerStart()
 
-	current_state.AddHandler(events.OnMessage(&Bot))
-	current_state.AddHandler(events.OnReady(&Bot))
+	b := bot.NewBotter(currentState, &ctx)
+	var alusers []databaser.AllowedUser
+	b.Db.Find(&alusers)
+	b.AllowList = append(b.AllowList, os.Getenv("BOT_OWNER"))
+	for _, u := range alusers {
+		b.AllowList = append(b.AllowList, strconv.Itoa(int(u.UserId)))
+	}
 
-	if err := current_state.Open(ctx); err != nil {
+	go b.PlayManagerStart()
+
+	currentState.AddHandler(func(c *gateway.ReadyEvent) { events.OnReady(c, &b) })
+	currentState.AddHandler(func(c *gateway.MessageCreateEvent) { events.OnMessage(c, &b) })
+
+	// start connection
+	if err := currentState.Open(ctx); err != nil {
 		log.Fatalln("failed to open:", err)
 	}
-	defer current_state.Close()
+	defer currentState.Close()
 
 	log.Println("Blocking, press ctrl+c to continue...")
 	<-ctx.Done()

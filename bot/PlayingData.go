@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dhowden/tag"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 	"github.com/diamondburned/oggreader"
 	"github.com/pkg/errors"
@@ -48,11 +47,11 @@ func NewPlayingData(bot *Botter, file string) *PlayingData {
 }
 func (p *PlayingData) Stop() {
 
+	p.Complete = true
 	p.outstm.Close()
 	p.cmd.Cancel()
 	p.Paused = false
 	p.Playing = false
-	p.Complete = true
 	p.time_played = 0
 	p.time_started = time.Now()
 	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.NotSpeaking)
@@ -165,14 +164,8 @@ func (p *PlayingData) RestoreCmd() error {
 	return nil
 }
 func (p *PlayingData) SendSongInfo() {
-	thef, _ := os.Open(p.bot.CurrentPlayingSong().Path)
-	defer thef.Close()
-	tag, err := tag.ReadFrom(thef)
-	if err != nil {
-		p.bot.BState.SendMessage(p.bot.SubChan, "error opening file")
-		return
-	}
-	msg_cnt := fmt.Sprintf("Currently playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`", tag.Title(), tag.Artist(), tag.Album())
+	tager := p.bot.CurrentPlayingSong()
+	msg_cnt := fmt.Sprintf("Currently playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor %s", tager.Title, tager.Artist, tager.Album, tager.Duration())
 
 	p.bot.BState.SendMessage(p.bot.SubChan, msg_cnt)
 }

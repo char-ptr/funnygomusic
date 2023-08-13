@@ -2,11 +2,13 @@ package bot
 
 import (
 	"context"
+	"funnygomusic/databaser"
 	"log"
 
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
 	"github.com/diamondburned/arikawa/v3/voice"
+	"gorm.io/gorm"
 )
 
 type ComData int
@@ -30,6 +32,7 @@ type Botter struct {
 	QueueIndex int
 	awaitSong  bool
 	SubChan    discord.ChannelID
+	Db         *gorm.DB
 }
 
 func NewBotter(s *state.State, ctx *context.Context) Botter {
@@ -39,6 +42,7 @@ func NewBotter(s *state.State, ctx *context.Context) Botter {
 		ComChan:   make(chan ComData),
 		AllowList: []string{},
 		awaitSong: true,
+		Db:        databaser.NewDatabase(),
 	}
 
 }
@@ -72,7 +76,10 @@ func (b *Botter) PlayManagerStart() {
 			{
 				if b.QueueIndex >= len(b.Queue) {
 					b.awaitSong = true
+					b.PlayData = nil
 					println("queue size too small..")
+					b.BState.SendMessage(b.SubChan, "Queue has ended")
+
 					continue
 				}
 				log.Println("request to play song")

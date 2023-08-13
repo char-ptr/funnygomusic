@@ -7,8 +7,8 @@ import (
 	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
-func onReady(c *gateway.ReadyEvent, le_bot *bot.Botter) {
-	le_bot.MyId = c.User.ID
+func OnReady(c *gateway.ReadyEvent, b *bot.Botter) {
+	b.MyId = c.User.ID
 	// le_bot.BState.Gateway().Send(le_bot.Ctx, &gateway.UpdatePresenceCommand{
 	// 	Status: discord.IdleStatus,
 	// 	Activities: []discord.Activity{
@@ -20,10 +20,4 @@ func onReady(c *gateway.ReadyEvent, le_bot *bot.Botter) {
 	// 	},
 	// })
 	log.Println("connected as: ", c.User.DisplayOrUsername())
-}
-
-func OnReady(le_bot *bot.Botter) func(c *gateway.ReadyEvent) {
-	return func(c *gateway.ReadyEvent) {
-		onReady(c, le_bot)
-	}
 }

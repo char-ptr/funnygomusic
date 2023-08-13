@@ -1,6 +1,5 @@
 package bot
 
-type QueueEntry struct {
-	Path string
-	Name string
-}
+import "funnygomusic/databaser"
+
+type QueueEntry = databaser.IndexEntry
