@@ -75,6 +75,7 @@ func (p *QueueManager) Start(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case msg := <-p.Notify:
+			println("got message:", msg.cmd)
 			switch msg.cmd {
 			case PlaylistAdd:
 				{
@@ -150,7 +151,7 @@ func (p *QueueManager) Start(ctx context.Context) {
 			case SongEnded:
 				{
 					if len(p.playlist) == 0 {
-						return
+						continue
 					}
 					p.index++
 					p.playingData.state = PSComplete
@@ -167,7 +168,7 @@ func (p *QueueManager) Start(ctx context.Context) {
 			case SongProcEnd:
 				{
 					if p.playingData == nil {
-						return
+						continue
 					}
 					if p.playingData.state == PSPlaying {
 						p.playingData.state = PSComplete

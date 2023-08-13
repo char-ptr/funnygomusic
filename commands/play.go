@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"funnygomusic/bot"
 	"funnygomusic/databaser"
-	"funnygomusic/utils"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"io/fs"
 	"log"
@@ -39,8 +38,8 @@ func PlayCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 		return
 
 	}
-	if b.VoiceSes == nil {
-		utils.JoinUsersVc(b, c)
+	if !b.V.Open() {
+		bot.JoinUsersVc(b, c.GuildID, c.Author.ID)
 	}
 	quelen := len(b.Queue.GetEntries())
 	entry := databaser.NewIndexEntryFromPathDnc(pathTo)

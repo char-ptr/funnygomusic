@@ -9,6 +9,7 @@ import (
 
 func OnReady(c *gateway.ReadyEvent, b *bot.Botter) {
 	b.MyId = c.User.ID
+	b.MyUsername = c.User.Username
 	// le_bot.BState.Gateway().Send(le_bot.Ctx, &gateway.UpdatePresenceCommand{
 	// 	Status: discord.IdleStatus,
 	// 	Activities: []discord.Activity{

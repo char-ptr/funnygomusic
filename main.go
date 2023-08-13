@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"funnygomusic/databaser"
+	"funnygomusic/routes"
+	"github.com/gin-gonic/gin"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -38,6 +41,7 @@ func main() {
 
 	currentState.AddHandler(func(c *gateway.ReadyEvent) { events.OnReady(c, b) })
 	currentState.AddHandler(func(c *gateway.MessageCreateEvent) { events.OnMessage(c, b) })
+	currentState.AddHandler(func(c *gateway.VoiceStateUpdateEvent) { events.OnVoiceStateUpdate(c, b) })
 
 	// start connection
 	if err := currentState.Open(ctx); err != nil {
@@ -45,6 +49,23 @@ func main() {
 	}
 	defer currentState.Close()
 
+	ginr := gin.Default()
+	ginr.Use(func(c *gin.Context) {
+		c.Set("bot", b)
+	})
+	ginr.GET("/connected", routes.Connected)
+	ginr.GET("/vcInfo", routes.VcInfo)
+	gin.SetMode(gin.ReleaseMode)
+	srv := &http.Server{
+		Addr:    ":1416",
+		Handler: ginr,
+	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalln("failed to listen:", err)
+		}
+	}()
+	defer srv.Close()
 	log.Println("Blocking, press ctrl+c to continue...")
 	<-ctx.Done()
 }

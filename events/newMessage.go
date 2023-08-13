@@ -24,6 +24,7 @@ var (
 		"song-info": commands.SongInfoCommand,
 		"allow":     commands.AllowCommand,
 		"restart":   commands.RestartCommand,
+		"testvce":   commands.TestVceCommand,
 	}
 )
 

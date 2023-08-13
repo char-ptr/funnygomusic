@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 	"github.com/diamondburned/oggreader"
 	"github.com/pkg/errors"
 )
@@ -53,7 +52,8 @@ func (p *PlayingData) Stop() {
 
 	p.state = PSComplete
 	p.cmd.Cancel()
-	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.NotSpeaking)
+	p.bot.V.Speaking(false)
+
 }
 func (p *PlayingData) Start() error {
 	p.RestoreCmd()
@@ -63,7 +63,7 @@ func (p *PlayingData) Start() error {
 		return err
 	}
 
-	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.Microphone)
+	p.bot.V.Speaking(true)
 
 	p.state = PSPlaying
 	p.started = time.Now()
@@ -76,7 +76,7 @@ func (p *PlayingData) playLoop() {
 	p.bot.Queue.Notify <- NewPlaylistMessage(SongProcEnd)
 }
 func (p *PlayingData) PipeIntoStream() {
-	if err := oggreader.DecodeBuffered(p.bot.VoiceSes, p.outStream); err != nil {
+	if err := oggreader.DecodeBuffered(p.bot.V.GetSession(), p.outStream); err != nil {
 		log.Println("ogg reader errored")
 	}
 	p.bot.Queue.Notify <- NewPlaylistMessage(SongPipeEnd)
@@ -95,7 +95,7 @@ func (p *PlayingData) Pause() {
 	p.duration = p.GetPlayingTime()
 	p.state = PSPaused
 	p.cmd.Cancel()
-	p.bot.VoiceSes.Speaking(p.bot.Ctx, voicegateway.NotSpeaking)
+	p.bot.V.Speaking(false)
 
 }
 
