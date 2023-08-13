@@ -39,7 +39,7 @@ func NewBotter(s *state.State, ctx *context.Context) Botter {
 	return Botter{
 		BState:    s,
 		Ctx:       *ctx,
-		ComChan:   make(chan ComData),
+		ComChan:   make(chan ComData, 10),
 		AllowList: []string{},
 		awaitSong: true,
 		Db:        databaser.NewDatabase(),
@@ -56,16 +56,15 @@ func (b *Botter) PlayManagerStart() {
 		switch v {
 		case NewItem:
 			{
-				if b.awaitSong {
-					b.awaitSong = false
-					go b.requestPlaySong()
-				}
+				go b.requestPlaySong()
 			}
 		case SongEnded:
 			{
-				b.QueueIndex++
-				log.Println("song ended -> idx = ", b.QueueIndex)
-				go b.requestPlaySong()
+				if len(b.Queue) != 0 {
+					b.QueueIndex++
+					log.Println("song ended -> idx = ", b.QueueIndex)
+					go b.requestPlaySong()
+				}
 			}
 		case Exit:
 			{
@@ -73,27 +72,29 @@ func (b *Botter) PlayManagerStart() {
 			}
 		case PlaySong:
 			{
+				log.Printf("checking queue size.. [%d:%d]\n", b.QueueIndex, len(b.Queue))
 				if b.QueueIndex >= len(b.Queue) {
 					b.awaitSong = true
 					b.PlayData = nil
-					log.Printf("queue size too small.. [%d:%d]", b.QueueIndex, len(b.Queue))
+					log.Println("too long.")
 					b.BState.SendMessage(b.SubChan, "Queue has ended")
 
 					continue
 				}
-				b.awaitSong = false
-				log.Println("request to play song")
-				b.NewPlayData(b.Queue[b.QueueIndex])
-				b.PlayData.Start()
-				go b.PlayData.SendSongInfo()
+				if b.awaitSong || b.PlayData == nil || (b.PlayData != nil && b.PlayData.Complete) {
+					b.awaitSong = false
+					log.Println("request to play song")
+					b.NewPlayData(b.Queue[b.QueueIndex])
+					b.PlayData.Start()
+					go b.PlayData.SendSongInfo()
+				}
 			}
 		}
 	}
 }
 func (b *Botter) ClearQueue() {
 	b.Queue = nil
-	var newi int
-	b.QueueIndex = newi
+	b.QueueIndex = 0
 }
 func (b *Botter) requestPlaySong() {
 	b.ComChan <- PlaySong
