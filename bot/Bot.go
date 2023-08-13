@@ -61,6 +61,7 @@ func (b *Botter) PlayManagerStart() {
 		case SongEnded:
 			{
 				b.QueueIndex++
+				log.Println("song ended -> idx = ", b.QueueIndex)
 				go b.requestPlaySong()
 			}
 		case Exit:

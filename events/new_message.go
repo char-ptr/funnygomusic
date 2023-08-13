@@ -98,6 +98,57 @@ func onMessage(c *gateway.MessageCreateEvent, leBot *bot.Botter) {
 			}
 
 		}
+	case "playfd":
+		{
+			query := strings.Join(command_args, " ")
+			added_count := 0
+			quelen := len(leBot.Queue)
+			filepath.Walk("Y:/data/music", func(path string, dir fs.FileInfo, err error) error {
+				if err != nil {
+					log.Println(err)
+					return nil
+				}
+				if !dir.IsDir() {
+					return nil
+				}
+
+				if strings.Contains(strings.ToLower(dir.Name()), strings.ToLower(query)) {
+					filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+						if err != nil {
+							log.Println(err)
+						}
+						if info.IsDir() {
+							return nil
+						}
+						leBot.Queue = append(leBot.Queue, bot.QueueEntry{Path: path, Name: info.Name()})
+						added_count++
+						return nil
+					})
+					return filepath.SkipAll
+				}
+				return nil
+			})
+
+			if added_count > 0 {
+				if leBot.VoiceSes == nil {
+					utils.JoinUsersVc(leBot, c)
+				}
+				leBot.ComChan <- bot.NewItem
+				_, err := leBot.BState.SendMessage(c.ChannelID, fmt.Sprintf("added `%d` items starting at index %d", added_count, quelen))
+				if err != nil {
+					log.Println(err)
+					return
+				}
+			} else {
+				_, err := leBot.BState.SendMessage(c.ChannelID, "unable to find any which match query")
+				if err != nil {
+					log.Println(err)
+					return
+				}
+
+			}
+
+		}
 	case "pause":
 		{
 			if leBot.PlayData.Playing {
@@ -184,6 +235,34 @@ func onMessage(c *gateway.MessageCreateEvent, leBot *bot.Botter) {
 
 			leBot.BState.SendMessageReply(c.ChannelID, msg_cnt, c.Message.ID)
 
+		}
+	case "set-qindex":
+		{
+			idx, err := strconv.Atoi(getIndex(command_args, 0))
+			if err != nil {
+				leBot.BState.SendMessage(c.ChannelID, "what")
+				return
+			}
+			if idx > len(leBot.Queue) {
+				leBot.BState.SendMessage(c.ChannelID, "out of bounds")
+				return
+			}
+			leBot.QueueIndex = idx - 1
+			leBot.PlayData.Stop()
+
+		}
+	case "queue":
+		{
+			if len(leBot.Queue) == 0 {
+				leBot.BState.SendMessage(c.ChannelID, "nothing in queue")
+				return
+			}
+			msg_cnt := "queue:```"
+			for k, v := range leBot.Queue {
+				msg_cnt += fmt.Sprintf("%d. %s\n", k, v.Name)
+			}
+			msg_cnt += "```"
+			leBot.BState.SendMessage(c.ChannelID, msg_cnt)
 		}
 	}
 }

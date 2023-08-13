@@ -155,8 +155,6 @@ func (p *PlayingData) RestoreCmd() error {
 		log.Println("adding custom filters:" + p.CustomFilters)
 		temp_cmd.Args = slices.Insert(temp_cmd.Args, 10, "-af", p.CustomFilters)
 	}
-	log.Println("restoring cmd", temp_cmd)
-
 	temp_cmd.Stderr = os.Stderr
 	stdout, err := temp_cmd.StdoutPipe()
 	if err != nil {
