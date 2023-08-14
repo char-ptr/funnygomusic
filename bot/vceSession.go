@@ -104,6 +104,9 @@ func (v *VoiceSessionHndlr) Open() bool {
 }
 func (v *VoiceSessionHndlr) Leave() {
 	v.vs.Leave(v.b.Ctx)
+	v.ChannelID = discord.ChannelID(0)
+	v.GuildId = discord.GuildID(0)
+	v.Users = nil
 	v.vs = nil
 }
 func (v *VoiceSessionHndlr) HasUser(uid discord.UserID) bool {
