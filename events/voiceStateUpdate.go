@@ -6,6 +6,9 @@ import (
 )
 
 func OnVoiceStateUpdate(c *gateway.VoiceStateUpdateEvent, b *bot.Botter) {
+	if b.V.Open() == false {
+		return
+	}
 	if u := b.V.GetUser(c.UserID); u != nil {
 		if !c.ChannelID.IsValid() {
 			// user left

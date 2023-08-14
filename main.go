@@ -49,15 +49,15 @@ func main() {
 	}
 	defer currentState.Close()
 
+	gin.SetMode(gin.ReleaseMode)
 	ginr := gin.Default()
 	ginr.Use(func(c *gin.Context) {
 		c.Set("bot", b)
 	})
 	ginr.GET("/connected", routes.Connected)
 	ginr.GET("/vcInfo", routes.VcInfo)
-	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
-		Addr:    ":1416",
+		Addr:    "0.0.0.0:34713",
 		Handler: ginr,
 	}
 	go func() {
