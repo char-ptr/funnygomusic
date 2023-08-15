@@ -115,7 +115,7 @@ func (p *PlayingData) RestoreCmd() error {
 		"-threads", "1",
 		"-ss", fmt.Sprintf("%dms", p.duration.Milliseconds()),
 		// Input file.
-		"-i", p.entry.Path,
+		"-i", p.entry.File,
 		// Output format; leave as "libopus".
 		"-c:a", "libopus",
 		// Bitrate in kilobits. This doesn't matter, but I recommend 96k as the

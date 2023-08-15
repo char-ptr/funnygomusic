@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func PlayCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
+func PlayFileCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 	pathTo := ""
 	query := strings.Join(args, " ")
 	filepath.WalkDir("Y:/data/music", func(path string, info fs.DirEntry, err error) error {
@@ -42,10 +42,15 @@ func PlayCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 		b.VoiceSes.JoinUsersVc(b, c.GuildID, c.Author.ID)
 	}
 	quelen := len(b.Queue.GetEntries())
-	entry := databaser.NewIndexEntryFromPathDnc(pathTo)
+	entry, err := databaser.NewIndexEntryFromPath(pathTo, b.Ctx)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	go b.Db.Create(&entry)
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistAdd).SetEntry(&entry)
-	_, err := b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", entry.Title, quelen))
+	_, err = b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", entry.Title, quelen))
 	if err != nil {
 		log.Println(err)
 		return

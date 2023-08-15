@@ -4,5 +4,5 @@ import "gorm.io/gorm"
 
 type AllowedUser struct {
 	gorm.Model
-	UserId uint64
+	ID uint64 `gorm:"primaryKey"`
 }

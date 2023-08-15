@@ -34,7 +34,7 @@ func main() {
 	b.Db.Find(&alusers)
 	b.AllowList = append(b.AllowList, os.Getenv("BOT_OWNER"))
 	for _, u := range alusers {
-		b.AllowList = append(b.AllowList, strconv.Itoa(int(u.UserId)))
+		b.AllowList = append(b.AllowList, strconv.Itoa(int(u.ID)))
 	}
 	PlCtx := context.WithoutCancel(ctx)
 	go b.Queue.Start(PlCtx)

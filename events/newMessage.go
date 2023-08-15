@@ -12,8 +12,10 @@ import (
 var (
 	Commands = map[string]commands.Command{
 		"join":      commands.JoinCommand,
-		"play":      commands.PlayCommand,
-		"p":         commands.PlayCommand,
+		"play":      commands.PlayIndexedCommand,
+		"p":         commands.PlayIndexedCommand,
+		"playf":     commands.PlayFileCommand,
+		"pf":        commands.PlayFileCommand,
 		"pause":     commands.PauseCommand,
 		"resume":    commands.ResumeCommand,
 		"leave":     commands.LeaveCommand,
@@ -27,6 +29,7 @@ var (
 		"allow":     commands.AllowCommand,
 		"restart":   commands.RestartCommand,
 		"testvce":   commands.TestVceCommand,
+		"idxdir":    commands.IndexDirCommand,
 	}
 )
 

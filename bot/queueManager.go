@@ -13,6 +13,8 @@ const (
 	PlaylistAdd PlaylistCmd = iota
 	PlaylistRemove
 	PlaylistClear
+	PlaylistRepeat
+	PlaylistShuffle
 	CurrentStop
 	CurrentSkip
 	CurrentPause
