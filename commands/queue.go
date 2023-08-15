@@ -31,7 +31,7 @@ func RemoveEntry(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	}
 	whatsThere := tmpQueue[idx]
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistRemove).SetIndex(idx)
-	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
+	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.GetTitle()))
 }
 
 func EntryInfo(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
@@ -42,7 +42,7 @@ func EntryInfo(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	}
 	whatsThere := tmpQueue[idx]
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistRemove).SetIndex(idx)
-	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
+	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.GetTitle()))
 }
 
 func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
@@ -53,7 +53,7 @@ func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
 	}
 	msgCnt := "queue:```"
 	for k, v := range tmpQueue {
-		msgCnt += fmt.Sprintf("%d. %s - %s\n", k, v.Artist, v.Title)
+		msgCnt += fmt.Sprintf("%d. %s - %s\n", k, v.GetArtist(), v.GetTitle())
 	}
 	msgCnt += "```"
 	_, err := b.SendMessage(c.ChannelID, msgCnt)

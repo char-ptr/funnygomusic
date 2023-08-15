@@ -44,6 +44,11 @@ func NewVoiceSessionUser(vste *discord.VoiceState, b *Botter) VoiceSessionUser {
 	}
 }
 
+const (
+	FrameDuration = 60 // ms
+	TimeIncrement = 2880
+)
+
 func (v *VoiceSessionHndlr) AttachVoiceSession(vs *voice.Session) {
 	v.vs = vs
 	//vs.AddHandler(func(spk *voicegateway.SpeakingEvent) {

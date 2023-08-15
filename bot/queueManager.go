@@ -3,7 +3,11 @@ package bot
 import (
 	"context"
 	"fmt"
-	"log"
+	"github.com/diamondburned/oggreader"
+	"github.com/hako/durafmt"
+	"io"
+	"log/slog"
+	"os"
 	"time"
 )
 
@@ -32,7 +36,7 @@ type QueueMessage struct {
 	cmd      PlaylistCmd
 	index    int
 	seek     int
-	newEntry *QueueEntry
+	newEntry QueueEntry
 }
 
 func (p *QueueMessage) SetIndex(idx int) *QueueMessage {
@@ -43,7 +47,7 @@ func (p *QueueMessage) SetSeek(seek int) *QueueMessage {
 	p.seek = seek
 	return p
 }
-func (p *QueueMessage) SetEntry(entry *QueueEntry) *QueueMessage {
+func (p *QueueMessage) SetEntry(entry QueueEntry) *QueueMessage {
 	p.newEntry = entry
 	return p
 }
@@ -52,139 +56,134 @@ func NewPlaylistMessage(msg PlaylistCmd) *QueueMessage {
 }
 
 type QueueManager struct {
-	b           *Botter
-	playlist    []QueueEntry
-	index       int
-	playingData *PlayingData
-	Notify      chan *QueueMessage
+	b        *Botter
+	playlist []QueueEntry
+	index    int
+	player   Player
+	Notify   chan *QueueMessage
+	logger   *slog.Logger
 }
 
 func NewQueueManager(b *Botter) *QueueManager {
-
+	attr := slog.String("scope", "Bot/QueueManager")
+	txtHndlr := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}).WithAttrs([]slog.Attr{attr})
+	logger := slog.New(txtHndlr)
 	return &QueueManager{
 		b:        b,
 		playlist: []QueueEntry{},
 		index:    0,
 		Notify:   make(chan *QueueMessage, 10),
+		logger:   logger,
 	}
 
 }
 
-func (p *QueueManager) Start(ctx context.Context) {
+func (qm *QueueManager) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case msg := <-p.Notify:
-			println("got message:", msg.cmd)
+		case msg := <-qm.Notify:
 			switch msg.cmd {
 			case PlaylistAdd:
 				{
-					p.playlist = append(p.playlist, *msg.newEntry)
-					p.Notify <- NewPlaylistMessage(CurrentStart)
+					qm.playlist = append(qm.playlist, msg.newEntry)
+					qm.Notify <- NewPlaylistMessage(CurrentStart)
 
 				}
 			case PlaylistRemove:
 				{
-					p.playlist = append(p.playlist[:msg.index], p.playlist[msg.index+1:]...)
+					qm.playlist = append(qm.playlist[:msg.index], qm.playlist[msg.index+1:]...)
 				}
 			case PlaylistClear:
 				{
-					p.index = 0
-					p.playlist = []QueueEntry{}
+					qm.index = 0
+					qm.playlist = []QueueEntry{}
 				}
 			case CurrentStop:
 				{
-					p.index = 0
-					p.playlist = nil
-					if p.playingData != nil {
-						p.playingData.Stop()
-						p.playingData = nil
+					qm.index = 0
+					qm.playlist = nil
+					if qm.player != nil {
+						qm.player.Stop()
+						qm.player = nil
 					}
 				}
 			case CurrentSkip:
 				{
-					if p.playingData != nil {
-						p.playingData.Stop()
+					if qm.player != nil {
+						qm.player.Stop()
 					}
 				}
 			case CurrentPause:
 				{
-					if p.GetPlayingState() == PSPlaying {
-						p.playingData.Pause()
+					if qm.GetPlayingState() == PSPlaying {
+						qm.player.Pause()
 					}
 				}
 			case CurrentResume:
 				{
-					if p.GetPlayingState() == PSPaused {
-						p.playingData.Resume()
-					}
-				}
-			case CurrentRestart:
-				{
-					if p.playingData != nil {
-						p.playingData.Restart()
+					if qm.GetPlayingState() == PSPaused {
+						r, _ := qm.player.Resume()
+						go qm.WriteData(r)
+						go qm.AlertUponEnd()
 					}
 				}
 			case CurrentStart:
 				{
-					if p.index >= len(p.playlist) {
-						p.playingData = nil
-						log.Println("too long.")
-						p.b.SendMessage(p.b.SubChan, "Queue has ended")
+					if qm.index >= len(qm.playlist) {
+						qm.player = nil
+						qm.logger.Debug("queue has ended", "size", len(qm.playlist))
+						qm.b.VoiceSes.Speaking(false, ctx)
+						qm.b.SendMessage(qm.b.SubChan, "Queue has ended")
 
 						continue
 					}
-					if p.playingData == nil || (p.playingData != nil && p.playingData.state == PSComplete) {
-						log.Println("request to play song")
-						curr := p.GetCurrentSong()
-						p.NewPlayData(curr)
-						p.playingData.Start()
-						p.b.SendMessage(p.b.SubChan, fmt.Sprintf("Now Playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor `%s`", curr.Title, curr.Artist, curr.Album, curr.DurationStr()))
-						//go p.playingData.SendSongInfo()
+					if qm.player == nil || qm.GetPlayingState() == PSComplete {
+						curr := *qm.GetCurrentSong()
+						qm.logger.Debug("request to play song", "index", qm.index, "song", curr)
+						qm.player = curr.GetPlayer()
+						qm.b.VoiceSes.Speaking(true, ctx)
+						r, e := qm.player.Play(ctx)
+						if e != nil {
+							qm.logger.Debug("failed to play song, removing song", "error", e)
+							qm.Notify <- NewPlaylistMessage(PlaylistRemove).SetIndex(qm.index)
+							qm.Notify <- NewPlaylistMessage(CurrentStart)
+							continue
+						}
+						go qm.WriteData(r)
+						qm.b.SendMessage(qm.b.SubChan, fmt.Sprintf("Now Playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor `%s`",
+							curr.GetTitle(), curr.GetArtist(), curr.GetAlbum(), durafmt.Parse(time.Duration(curr.GetDuration())*time.Millisecond).LimitFirstN(2)))
+						go qm.AlertUponEnd()
 					}
 
 				}
 			case CurrentSeek:
 				{
-					if p.GetPlayingState() == PSPlaying {
-						p.playingData.Seek(uint64(msg.seek))
+					if qm.GetPlayingState() == PSPlaying {
+						r, _ := qm.player.Seek(msg.seek)
+						go qm.WriteData(r)
+						go qm.AlertUponEnd()
 					}
 				}
 			case SongEnded:
 				{
-					if len(p.playlist) == 0 {
+					if len(qm.playlist) == 0 {
 						continue
 					}
-					p.index++
-					p.playingData.state = PSComplete
-					p.Notify <- NewPlaylistMessage(CurrentStart)
-				}
-			case SongPipeEnd:
-				{
-					if p.GetPlayingState() == PSComplete {
-						p.Notify <- NewPlaylistMessage(SongEnded)
-					} else if p.GetPlayingState() == PSRestart {
-						p.playingData.Start()
-					}
-				}
-			case SongProcEnd:
-				{
-					if p.playingData == nil {
-						continue
-					}
-					if p.GetPlayingState() == PSPlaying {
-						p.playingData.state = PSComplete
-					}
+					qm.index++
+					qm.Notify <- NewPlaylistMessage(CurrentStart)
 				}
 			case Jump:
 				{
-					if p.GetPlayingState() == PSNotPlaying {
-						p.index = msg.index
-						p.Notify <- NewPlaylistMessage(CurrentStart)
+					if qm.GetPlayingState() == PSNotPlaying {
+						qm.index = msg.index
+						qm.Notify <- NewPlaylistMessage(CurrentStart)
 					} else {
-						p.index = msg.index - 1
-						p.playingData.Stop()
+						qm.index = msg.index - 1
+						qm.player.Stop()
 					}
 
 				}
@@ -192,32 +191,51 @@ func (p *QueueManager) Start(ctx context.Context) {
 		}
 	}
 }
-func (p *QueueManager) GetCurrentSong() *QueueEntry {
-	if p.index >= len(p.playlist) {
-		return nil
+func (qm *QueueManager) AlertUponEnd() {
+	err := qm.player.WaitTillEnd()
+	if err != nil {
+		return
 	}
-	return &p.playlist[p.index]
-}
-func (p *QueueManager) GetCurrentSongTime() time.Duration {
-	if p.playingData == nil {
-		return time.Duration(0)
+	if qm.GetPlayingState() == PSComplete {
+		qm.logger.Debug("Song ended, complete")
+	} else {
+		qm.logger.Debug("Song ended, but not complete")
 	}
-	return p.playingData.GetPlayingTime()
 }
-func (p *QueueManager) GetEntries() []QueueEntry {
-	return p.playlist
-}
-func (p *QueueManager) GetIndex() int {
-	return p.index
+func (qm *QueueManager) WriteData(reader io.Reader) {
+	qm.logger.Debug("piping data -> ogg -> discord voice")
+	if err := oggreader.DecodeBuffered(qm.b.VoiceSes.GetSession(), reader); err != nil {
+		qm.logger.Log(qm.b.Ctx, slog.LevelError, "Failed to decode ogg", "error", err)
+	}
+	if qm.GetPlayingState() == PSComplete {
+		qm.Notify <- NewPlaylistMessage(SongEnded)
+	} else {
+		qm.logger.Debug("Song ended, but not complete")
+	}
 }
 
-func (p *QueueManager) NewPlayData(entry *QueueEntry) {
-	pd := NewPlayingData(p.b, entry)
-	p.playingData = pd
+func (qm *QueueManager) GetCurrentSong() *QueueEntry {
+	if qm.index >= len(qm.playlist) {
+		return nil
+	}
+	return &qm.playlist[qm.index]
 }
-func (p *QueueManager) GetPlayingState() PlayingState {
-	if p.playingData == nil {
+func (qm *QueueManager) GetCurrentSongTime() time.Duration {
+	if qm.player == nil {
+		return time.Duration(0)
+	}
+	return qm.player.PositionDuration()
+}
+func (qm *QueueManager) GetEntries() []QueueEntry {
+	return qm.playlist
+}
+func (qm *QueueManager) GetIndex() int {
+	return qm.index
+}
+
+func (qm *QueueManager) GetPlayingState() PlayingState {
+	if qm.player == nil {
 		return PSNotPlaying
 	}
-	return p.playingData.state
+	return qm.player.State()
 }

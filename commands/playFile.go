@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 	"funnygomusic/bot"
-	"funnygomusic/databaser"
+	"funnygomusic/bot/entries"
 	"github.com/diamondburned/arikawa/v3/gateway"
 	"io/fs"
 	"log"
@@ -42,15 +42,9 @@ func PlayFileCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string
 		b.VoiceSes.JoinUsersVc(b, c.GuildID, c.Author.ID)
 	}
 	quelen := len(b.Queue.GetEntries())
-	entry, err := databaser.NewIndexEntryFromPath(pathTo, b.Ctx)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	go b.Db.Create(&entry)
-	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistAdd).SetEntry(&entry)
-	_, err = b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", entry.Title, quelen))
+	entry := entries.NewLocalEntryPath(pathTo)
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistAdd).SetEntry(entry)
+	_, err := b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", entry.GetTitle(), quelen))
 	if err != nil {
 		log.Println(err)
 		return

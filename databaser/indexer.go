@@ -134,7 +134,7 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, albm *sync.Map, artm *sync.Map, sema *semaphore.Weighted, waiter *sync.WaitGroup) {
 	defer waiter.Done()
 	defer sema.Release(1)
-	data, err := fetchDataForFile(file, ctx)
+	data, err := FetchDataForFile(file, ctx)
 	if err != nil {
 		log.Println("failed to index file:", err)
 		return
@@ -202,7 +202,7 @@ type RawProbeOutput struct {
 	} `json:"format"`
 }
 
-func fetchDataForFile(file string, ctx context.Context) (RawProbeOutput, error) {
+func FetchDataForFile(file string, ctx context.Context) (RawProbeOutput, error) {
 	//println("fetching data for file:", file)
 	cmd := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
