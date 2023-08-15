@@ -2,14 +2,13 @@ package databaser
 
 import (
 	"encoding/json"
+	"github.com/hako/durafmt"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
-
-	"github.com/hako/durafmt"
-	"gorm.io/gorm"
 )
 
 type IndexEntry struct {
@@ -18,7 +17,7 @@ type IndexEntry struct {
 	Artist    string `gorm:"index"`
 	Album     string `gorm:"index"`
 	Path      string
-	Length    time.Duration
+	Length    float64
 	CanoTrack int
 }
 
@@ -49,20 +48,19 @@ func NewIndexEntryFromPath(path string) (IndexEntry, error) {
 
 func ParseRawOutputToIndex(raw *RawProbeOutput, path string) IndexEntry {
 	plen1m, _ := strconv.ParseFloat(raw.Format.Duration, 64)
-	parsedLen := time.Duration(plen1m) * time.Second
 	parsedTrack, _ := strconv.Atoi(raw.Format.Tags.Track)
 	return IndexEntry{
 		Title:     raw.Format.Tags.Title,
 		Artist:    raw.Format.Tags.Artist,
 		Album:     raw.Format.Tags.Album,
 		Path:      path,
-		Length:    parsedLen,
+		Length:    plen1m,
 		CanoTrack: parsedTrack,
 	}
 }
 
-func CommitIndexToDb(entry *IndexEntry, db *gorm.DB) {
-	db.Create(entry)
+func (e *IndexEntry) Duration() time.Duration {
+	return time.Duration(e.Length) * time.Second
 }
 
 type RawProbeOutput struct {
@@ -77,7 +75,7 @@ type RawProbeOutput struct {
 	} `json:"format"`
 }
 
-func (e *IndexEntry) Duration() string {
-	dur := durafmt.Parse(e.Length).LimitFirstN(2)
+func (e *IndexEntry) DurationStr() string {
+	dur := durafmt.Parse(e.Duration()).LimitFirstN(2)
 	return dur.String()
 }

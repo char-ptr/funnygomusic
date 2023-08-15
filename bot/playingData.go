@@ -52,7 +52,7 @@ func (p *PlayingData) Stop() {
 
 	p.state = PSComplete
 	p.cmd.Cancel()
-	p.bot.V.Speaking(false)
+	p.bot.VoiceSes.Speaking(false, p.bot.Ctx)
 
 }
 func (p *PlayingData) Start() error {
@@ -63,7 +63,7 @@ func (p *PlayingData) Start() error {
 		return err
 	}
 
-	p.bot.V.Speaking(true)
+	p.bot.VoiceSes.Speaking(true, p.bot.Ctx)
 
 	p.state = PSPlaying
 	p.started = time.Now()
@@ -76,7 +76,7 @@ func (p *PlayingData) playLoop() {
 	p.bot.Queue.Notify <- NewPlaylistMessage(SongProcEnd)
 }
 func (p *PlayingData) PipeIntoStream() {
-	if err := oggreader.DecodeBuffered(p.bot.V.GetSession(), p.outStream); err != nil {
+	if err := oggreader.DecodeBuffered(p.bot.VoiceSes.GetSession(), p.outStream); err != nil {
 		log.Println("ogg reader errored")
 	}
 	p.bot.Queue.Notify <- NewPlaylistMessage(SongPipeEnd)
@@ -95,7 +95,7 @@ func (p *PlayingData) Pause() {
 	p.duration = p.GetPlayingTime()
 	p.state = PSPaused
 	p.cmd.Cancel()
-	p.bot.V.Speaking(false)
+	p.bot.VoiceSes.Speaking(false, p.bot.Ctx)
 
 }
 

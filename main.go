@@ -56,6 +56,7 @@ func main() {
 	})
 	ginr.GET("/connected", routes.Connected)
 	ginr.GET("/vcInfo", routes.VcInfo)
+	ginr.GET("/currentSong", routes.CurrentSong)
 	srv := &http.Server{
 		Addr:    "0.0.0.0:34713",
 		Handler: ginr,

@@ -11,8 +11,8 @@ import (
 type ComData int
 
 type Botter struct {
-	BState     *state.State
-	V          *VoiceSessionHndlr
+	*state.State
+	VoiceSes   *VoiceSessionHndlr
 	Queue      *QueueManager
 	Ctx        context.Context
 	MyId       discord.UserID
@@ -24,13 +24,12 @@ type Botter struct {
 
 func NewBotter(s *state.State, ctx *context.Context) *Botter {
 	b := &Botter{
-		BState:    s,
+		State:     s,
 		Ctx:       *ctx,
 		AllowList: []string{},
-		V:         &VoiceSessionHndlr{},
+		VoiceSes:  &VoiceSessionHndlr{},
 		Db:        databaser.NewDatabase(),
 	}
-	b.V.b = b
 	b.Queue = NewQueueManager(b)
 	return b
 

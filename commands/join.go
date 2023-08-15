@@ -6,8 +6,8 @@ import (
 )
 
 func JoinCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	if b.V.Open() {
+	if b.VoiceSes.Open() {
 		return
 	}
-	bot.JoinUsersVc(b, c.GuildID, c.Author.ID)
+	b.VoiceSes.JoinUsersVc(b, c.GuildID, c.Author.ID)
 }

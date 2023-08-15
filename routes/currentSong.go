@@ -5,9 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Connected(c *gin.Context) {
+func CurrentSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	c.JSON(200, gin.H{
-		"Connected": b.VoiceSes.Open(),
-	})
+	c.JSON(200, b.Queue.GetCurrentSong())
 }

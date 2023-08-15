@@ -6,19 +6,26 @@ import (
 )
 
 func OnVoiceStateUpdate(c *gateway.VoiceStateUpdateEvent, b *bot.Botter) {
-	if b.V.Open() == false {
+	if b.VoiceSes.Open() == false {
 		return
 	}
-	if u := b.V.GetUser(c.UserID); u != nil {
+	if u := b.VoiceSes.GetUser(c.UserID); u != nil {
 		if !c.ChannelID.IsValid() {
 			// user left
-			b.V.DeleteUser(c.UserID)
+			b.VoiceSes.DeleteUser(c.UserID)
 		} else {
 			vsu := bot.NewVoiceSessionUser(&c.VoiceState, b)
-			b.V.UpdateUser(c.UserID, &vsu)
+			if vsu.ID == b.MyId {
+				if vsu.Muted || c.SelfDeaf {
+					b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentPause)
+				} else {
+					b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentResume)
+				}
+			}
+			b.VoiceSes.UpdateUser(c.UserID, &vsu)
 		}
 	} else {
 		vsu := bot.NewVoiceSessionUser(&c.VoiceState, b)
-		b.V.AddUser(&vsu)
+		b.VoiceSes.AddUser(&vsu)
 	}
 }

@@ -25,19 +25,30 @@ func ClearQueue(b *bot.Botter) {
 
 func RemoveEntry(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	tmpQueue := b.Queue.GetEntries()
-	if idx > len(tmpQueue) {
-		b.BState.SendMessage(c.ChannelID, "out of bounds")
+	if idx >= len(tmpQueue) {
+		b.SendMessage(c.ChannelID, "out of bounds")
 		return
 	}
 	whatsThere := tmpQueue[idx]
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistRemove).SetIndex(idx)
-	b.BState.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
+	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
+}
+
+func EntryInfo(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
+	tmpQueue := b.Queue.GetEntries()
+	if idx > len(tmpQueue) {
+		b.SendMessage(c.ChannelID, "out of bounds")
+		return
+	}
+	whatsThere := tmpQueue[idx]
+	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistRemove).SetIndex(idx)
+	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.Title))
 }
 
 func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
 	tmpQueue := b.Queue.GetEntries()
 	if len(tmpQueue) == 0 {
-		b.BState.SendMessage(c.ChannelID, "nothing in queue")
+		b.SendMessage(c.ChannelID, "nothing in queue")
 		return
 	}
 	msgCnt := "queue:```"
@@ -45,7 +56,7 @@ func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
 		msgCnt += fmt.Sprintf("%d. %s - %s\n", k, v.Artist, v.Title)
 	}
 	msgCnt += "```"
-	_, err := b.BState.SendMessage(c.ChannelID, msgCnt)
+	_, err := b.SendMessage(c.ChannelID, msgCnt)
 	if err != nil {
 		log.Println(err)
 	}
@@ -58,24 +69,24 @@ func QueueCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 		return
 	}
 	switch strings.ToLower(args[0]) {
-	case "list":
+	case "list", "ls", "l":
 		{
 			ListQueue(c, b)
 		}
-	case "remove":
+	case "remove", "rm", "r":
 		{
 			if len(args) < 2 {
-				b.BState.SendMessage(c.ChannelID, "invalid arg length")
+				b.SendMessage(c.ChannelID, "invalid arg length")
 				return
 			}
 			idx, err := strconv.Atoi(utils.GetIndex(args, 1))
 			if err != nil {
-				b.BState.SendMessage(c.ChannelID, "unable to parse index as int")
+				b.SendMessage(c.ChannelID, "unable to parse index as int")
 				return
 			}
 			RemoveEntry(c, b, idx)
 		}
-	case "clear":
+	case "clear", "c":
 		{
 			ClearQueue(b)
 		}

@@ -7,5 +7,5 @@ import (
 
 func LeaveCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentStop)
-	b.V.Leave()
+	b.VoiceSes.Leave(b.Ctx)
 }

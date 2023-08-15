@@ -7,5 +7,5 @@ import (
 )
 
 func TestVceCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
-	log.Printf("TestVceCommand: %#v", b.V)
+	log.Printf("TestVceCommand: %#v", b.VoiceSes)
 }

@@ -3,7 +3,6 @@ package bot
 import (
 	"context"
 	"fmt"
-	"github.com/hako/durafmt"
 	"log"
 	"time"
 )
@@ -109,13 +108,13 @@ func (p *QueueManager) Start(ctx context.Context) {
 				}
 			case CurrentPause:
 				{
-					if p.playingData != nil {
+					if p.GetPlayingState() == PSPlaying {
 						p.playingData.Pause()
 					}
 				}
 			case CurrentResume:
 				{
-					if p.playingData != nil {
+					if p.GetPlayingState() == PSPaused {
 						p.playingData.Resume()
 					}
 				}
@@ -130,7 +129,7 @@ func (p *QueueManager) Start(ctx context.Context) {
 					if p.index >= len(p.playlist) {
 						p.playingData = nil
 						log.Println("too long.")
-						p.b.BState.SendMessage(p.b.SubChan, "Queue has ended")
+						p.b.SendMessage(p.b.SubChan, "Queue has ended")
 
 						continue
 					}
@@ -139,14 +138,16 @@ func (p *QueueManager) Start(ctx context.Context) {
 						curr := p.GetCurrentSong()
 						p.NewPlayData(curr)
 						p.playingData.Start()
-						p.b.BState.SendMessage(p.b.SubChan, fmt.Sprintf("Now Playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor `%s`", curr.Title, curr.Artist, curr.Album, durafmt.Parse(curr.Length).LimitFirstN(2)))
+						p.b.SendMessage(p.b.SubChan, fmt.Sprintf("Now Playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor `%s`", curr.Title, curr.Artist, curr.Album, curr.DurationStr()))
 						//go p.playingData.SendSongInfo()
 					}
 
 				}
 			case CurrentSeek:
 				{
-					p.playingData.Seek(uint64(msg.seek))
+					if p.GetPlayingState() == PSPlaying {
+						p.playingData.Seek(uint64(msg.seek))
+					}
 				}
 			case SongEnded:
 				{
@@ -159,9 +160,9 @@ func (p *QueueManager) Start(ctx context.Context) {
 				}
 			case SongPipeEnd:
 				{
-					if p.playingData.state == PSComplete {
+					if p.GetPlayingState() == PSComplete {
 						p.Notify <- NewPlaylistMessage(SongEnded)
-					} else if p.playingData.state == PSRestart {
+					} else if p.GetPlayingState() == PSRestart {
 						p.playingData.Start()
 					}
 				}
@@ -170,7 +171,7 @@ func (p *QueueManager) Start(ctx context.Context) {
 					if p.playingData == nil {
 						continue
 					}
-					if p.playingData.state == PSPlaying {
+					if p.GetPlayingState() == PSPlaying {
 						p.playingData.state = PSComplete
 					}
 				}

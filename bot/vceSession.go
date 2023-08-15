@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/voice"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
@@ -17,11 +18,17 @@ type VoiceSessionUser struct {
 	Deafen   bool           `json:"deafen"`
 	Speaking bool           `json:"speaking"`
 }
+type VoiceSessionHndlr struct {
+	vs        *voice.Session
+	GuildId   discord.GuildID    `json:"guild_id"`
+	ChannelID discord.ChannelID  `json:"channel_id"`
+	Users     []VoiceSessionUser `json:"users"`
+}
 
 func NewVoiceSessionUser(vste *discord.VoiceState, b *Botter) VoiceSessionUser {
 	uname := b.MyUsername
 	if vste.UserID != b.MyId {
-		u, err := b.BState.User(vste.UserID)
+		u, err := b.User(vste.UserID)
 		if err != nil {
 			uname = "unknown"
 		} else {
@@ -31,18 +38,10 @@ func NewVoiceSessionUser(vste *discord.VoiceState, b *Botter) VoiceSessionUser {
 	return VoiceSessionUser{
 		Name:     uname,
 		ID:       vste.UserID,
-		Muted:    vste.Mute,
-		Deafen:   vste.Deaf,
+		Muted:    vste.Mute || vste.SelfMute,
+		Deafen:   vste.Deaf || vste.SelfDeaf,
 		Speaking: false,
 	}
-}
-
-type VoiceSessionHndlr struct {
-	vs        *voice.Session
-	b         *Botter
-	GuildId   discord.GuildID    `json:"guild_id"`
-	ChannelID discord.ChannelID  `json:"channel_id"`
-	Users     []VoiceSessionUser `json:"users"`
 }
 
 func (v *VoiceSessionHndlr) AttachVoiceSession(vs *voice.Session) {
@@ -62,9 +61,9 @@ func (v *VoiceSessionHndlr) JoinedChannel(chn *discord.ChannelID, gld *discord.G
 	v.ChannelID = *chn
 }
 
-func (v *VoiceSessionHndlr) UpdateUsers() {
+func (v *VoiceSessionHndlr) UpdateUsers(b *Botter) {
 	v.Users = nil
-	vstates, err := v.b.BState.VoiceStates(v.GuildId)
+	vstates, err := b.VoiceStates(v.GuildId)
 	if err != nil {
 		log.Println("unable to getg voice states: ", err)
 		return
@@ -73,37 +72,37 @@ func (v *VoiceSessionHndlr) UpdateUsers() {
 		if state.ChannelID != state.ChannelID {
 			continue
 		}
-		v.Users = append(v.Users, NewVoiceSessionUser(&state, v.b))
+		v.Users = append(v.Users, NewVoiceSessionUser(&state, b))
 	}
 }
 
-func JoinUsersVc(b *Botter, gld discord.GuildID, uid discord.UserID) error {
-	vs, err := voice.NewSession(b.BState)
+func (v *VoiceSessionHndlr) JoinUsersVc(b *Botter, gld discord.GuildID, uid discord.UserID) error {
+	vs, err := voice.NewSession(b)
 	if err != nil {
 		return errors.Wrap(err, "cannot make new voice session")
 	}
-	b.V.AttachVoiceSession(vs)
+	v.AttachVoiceSession(vs)
 	vs.SetUDPDialer(udp.DialFuncWithFrequency(
 		FrameDuration*time.Millisecond, // correspond to -frame_duration
 		TimeIncrement,
 	))
-	uservs, err := b.BState.VoiceState(gld, uid)
-	b.V.GuildId = gld
-	b.V.ChannelID = uservs.ChannelID
+	uservs, err := b.VoiceState(gld, uid)
+	v.GuildId = gld
+	v.ChannelID = uservs.ChannelID
 
 	if err != nil {
 		return errors.Wrap(err, "cannot get voice state")
 	}
 	vs.JoinChannel(b.Ctx, uservs.ChannelID, false, false)
-	go b.V.UpdateUsers()
+	go v.UpdateUsers(b)
 	return nil
 }
 
 func (v *VoiceSessionHndlr) Open() bool {
 	return v.vs != nil
 }
-func (v *VoiceSessionHndlr) Leave() {
-	v.vs.Leave(v.b.Ctx)
+func (v *VoiceSessionHndlr) Leave(ctx context.Context) {
+	v.vs.Leave(ctx)
 	v.ChannelID = discord.ChannelID(0)
 	v.GuildId = discord.GuildID(0)
 	v.Users = nil
@@ -144,14 +143,14 @@ func (v *VoiceSessionHndlr) UpdateUser(uid discord.UserID, user *VoiceSessionUse
 func (v *VoiceSessionHndlr) AddUser(user *VoiceSessionUser) {
 	v.Users = append(v.Users, *user)
 }
-func (v *VoiceSessionHndlr) Speaking(isSpeaking bool) {
+func (v *VoiceSessionHndlr) Speaking(isSpeaking bool, ctx context.Context) {
 	if !v.Open() {
 		return
 	}
 	if isSpeaking {
-		v.vs.Speaking(v.b.Ctx, voicegateway.Microphone)
+		v.vs.Speaking(ctx, voicegateway.Microphone)
 	} else {
-		v.vs.Speaking(v.b.Ctx, voicegateway.NotSpeaking)
+		v.vs.Speaking(ctx, voicegateway.NotSpeaking)
 	}
 }
 
