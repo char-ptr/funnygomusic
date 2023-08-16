@@ -14,6 +14,7 @@ func PlayIndexedCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []str
 	res := databaser.TryFindSong(query, b.Db)
 	if res == nil {
 		b.SendMessage(c.ChannelID, "unable to find, srry")
+		return
 	}
 	if !b.VoiceSes.Open() {
 		b.VoiceSes.JoinUsersVc(b, c.GuildID, c.Author.ID)
@@ -22,5 +23,5 @@ func PlayIndexedCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []str
 
 	quelen := len(b.Queue.GetEntries())
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistAdd).SetEntry(&fullRes)
-	b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s` at index %d", fullRes.GetTitle(), quelen))
+	b.SendMessage(c.ChannelID, fmt.Sprintf("added `%s (%s)` at index %d", fullRes.GetTitle(), fullRes.GetArtist(), quelen))
 }

@@ -207,6 +207,11 @@ func (qm *QueueManager) WriteData(reader io.Reader) {
 	if err := oggreader.DecodeBuffered(qm.b.VoiceSes.GetSession(), reader); err != nil {
 		qm.logger.Log(qm.b.Ctx, slog.LevelError, "Failed to decode ogg", "error", err)
 	}
+	//_, err := io.Copy(qm.b.VoiceSes.GetSession(), reader)
+	//if err != nil {
+	//	qm.logger.Log(qm.b.Ctx, slog.LevelError, "Failed to copy ogg", "error", err)
+	//	return
+	//}
 	if qm.GetPlayingState() == PSComplete {
 		qm.Notify <- NewPlaylistMessage(SongEnded)
 	} else {

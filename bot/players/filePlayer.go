@@ -108,10 +108,14 @@ func (f *File) Stop() error {
 	return nil
 }
 func (f *File) Position() int {
-	return f.position
+	addOn := 0
+	if f.state == bot.PSPlaying {
+		addOn = int(time.Since(f.started).Milliseconds())
+	}
+	return f.position + addOn
 }
 func (f *File) PositionDuration() time.Duration {
-	return time.Duration(f.position) * time.Millisecond
+	return time.Duration(f.Position()) * time.Millisecond
 }
 func (f *File) State() bot.PlayingState {
 	return f.state

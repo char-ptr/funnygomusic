@@ -20,7 +20,7 @@ func TryFindSong(str string, db *gorm.DB) *SmolSongData {
 	var songs []SmolSongData
 	newStr := "%" + strings.ReplaceAll(str, "%", "%%") + "%"
 
-	db.Raw("select lower(indexed_songs.title) as title, indexed_songs.id, lower(indexed_artists.name) as artist from indexed_songs left join indexed_artists on indexed_artists.id = indexed_songs.artist where lower(title) like lower(?)", newStr).Scan(&songs)
+	db.Raw("select lower(indexed_songs.title) as title, indexed_songs.id, lower(indexed_artists.name) as artist from indexed_songs left join indexed_artists on indexed_artists.id = indexed_songs.artist where concat(lower(title),' ',lower(indexed_artists.name)) like lower(?)", newStr).Scan(&songs)
 
 	log.Printf("Found %d songs", len(songs))
 

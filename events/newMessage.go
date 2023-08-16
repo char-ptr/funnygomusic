@@ -16,6 +16,7 @@ var (
 		"p":         commands.PlayIndexedCommand,
 		"playf":     commands.PlayFileCommand,
 		"pf":        commands.PlayFileCommand,
+		"py":        commands.PlayYoutubeCommand,
 		"pause":     commands.PauseCommand,
 		"resume":    commands.ResumeCommand,
 		"leave":     commands.LeaveCommand,
