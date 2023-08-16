@@ -49,6 +49,8 @@ func main() {
 	}
 	defer currentState.Close()
 
+	cfg := databaser.MakeConfigPath()
+
 	gin.SetMode(gin.ReleaseMode)
 	ginr := gin.Default()
 	ginr.Use(func(c *gin.Context) {
@@ -57,6 +59,7 @@ func main() {
 	ginr.GET("/connected", routes.Connected)
 	ginr.GET("/vcInfo", routes.VcInfo)
 	ginr.GET("/currentSong", routes.CurrentSong)
+	ginr.Static("/artwork", cfg+"/artwork")
 	srv := &http.Server{
 		Addr:    "0.0.0.0:34713",
 		Handler: ginr,

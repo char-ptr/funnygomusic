@@ -31,6 +31,7 @@ var (
 		"restart":   commands.RestartCommand,
 		"testvce":   commands.TestVceCommand,
 		"idxdir":    commands.IndexDirCommand,
+		"ua":        commands.UpdateArtworksCommand,
 	}
 )
 
