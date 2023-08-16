@@ -39,11 +39,11 @@ func (yt *Youtube) Play(ctx context.Context) (io.Reader, error) {
 	}
 	cmd := exec.CommandContext(ctx, "yt-dlp",
 		yt.url,
-		"--downloader", "ffmpeg",
-		"--force-keyframes-at-cuts",
-		"--download-sections", fmt.Sprintf("*%d-", int(yt.position/1000)),
-		"--postprocessor-args", "ffmpeg:\"-threads 1\"",
-		"-x", "--audio-format", "opus",
+		//"--downloader", "ffmpeg",
+		//"--force-keyframes-at-cuts",
+		//"--download-sections", fmt.Sprintf("*%d-", int(yt.position/1000)),
+		//"--postprocessor-args", "ffmpeg:\"-threads 1\"",
+		//"-x", "--audio-format", "opus",
 		"--quiet", "-o", "-",
 	)
 	log.Println(cmd.String())
@@ -62,6 +62,7 @@ func (yt *Youtube) Play(ctx context.Context) (io.Reader, error) {
 	}
 
 	cmd2 := exec.CommandContext(ctx, "ffmpeg", "-hide_banner", "-loglevel", "error",
+		"-ss", fmt.Sprintf("%dms", yt.position),
 		"-i", "pipe:",
 		"-threads", "1",
 		"-c:a", "libopus",
