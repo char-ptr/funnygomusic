@@ -45,15 +45,30 @@ func EntryInfo(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	b.SendMessage(c.ChannelID, fmt.Sprintf("removed `%s`", whatsThere.GetTitle()))
 }
 
-func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
+func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	tmpQueue := b.Queue.GetEntries()
 	if len(tmpQueue) == 0 {
 		b.SendMessage(c.ChannelID, "nothing in queue")
 		return
 	}
+
+	lookFrom := b.Queue.GetIndex()
+	log.Println("lookfrom", lookFrom, "idx", idx)
+	startRange := 0
+	if idx != 0 {
+		startRange = lookFrom + (5 * idx)
+	} else {
+		startRange = lookFrom - 5
+	}
+	startRange = max(startRange, 0)
+	endRange := min(startRange+10, len(tmpQueue))
 	msgCnt := "queue:```"
-	for k, v := range tmpQueue {
-		msgCnt += fmt.Sprintf("%d. %s - %s\n", k, v.GetArtist(), v.GetTitle())
+	for k, v := range tmpQueue[startRange:endRange] {
+		actIdx := k + startRange
+		if actIdx == lookFrom {
+			msgCnt += "-> "
+		}
+		msgCnt += fmt.Sprintf("%d. %s - %s\n", actIdx, v.GetArtist(), v.GetTitle())
 	}
 	msgCnt += "```"
 	_, err := b.SendMessage(c.ChannelID, msgCnt)
@@ -65,13 +80,17 @@ func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter) {
 
 func QueueCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []string) {
 	if len(args) == 0 {
-		ListQueue(c, b)
+		ListQueue(c, b, 0)
 		return
 	}
 	switch strings.ToLower(args[0]) {
 	case "list", "ls", "l":
 		{
-			ListQueue(c, b)
+			idx, err := strconv.Atoi(utils.GetIndex(args, 1))
+			if err != nil {
+				idx = 0
+			}
+			ListQueue(c, b, idx)
 		}
 	case "remove", "rm", "r":
 		{
