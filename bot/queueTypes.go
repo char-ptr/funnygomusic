@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"io"
+	"reflect"
 	"time"
 )
 
@@ -34,3 +35,15 @@ const (
 	PSRestart
 	PSNotPlaying
 )
+
+func GetTypedEntry(entry *QueueEntry) *TypedEntry {
+	return &TypedEntry{
+		QueueEntry: *entry,
+		Ty:         reflect.TypeOf(*entry).String(),
+	}
+}
+
+type TypedEntry struct {
+	QueueEntry
+	Ty string `json:"type"`
+}

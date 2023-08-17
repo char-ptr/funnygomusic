@@ -1,6 +1,8 @@
 package entries
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"funnygomusic/bot"
 	"funnygomusic/bot/players"
@@ -13,10 +15,12 @@ import (
 
 type Url struct {
 	*YtDLPData
-	url string
 }
 
 func (l *Url) GetTitle() string {
+	if l.Title == "" {
+		return l.Id
+	}
 	return l.Title
 }
 func (l *Url) GetAlbum() string {
@@ -26,44 +30,51 @@ func (l *Url) GetArtist() string {
 	return l.Channel
 }
 func (l *Url) GetDuration() int {
-	return l.Duration * 1000
+	return int(l.Duration * 1000)
 }
 func (l *Url) GetPlayer() bot.Player {
-	return players.NewYoutubePlayer(l.url)
+	return players.NewYoutubePlayer(l.Url)
 }
 
-func NewUrl(url string) (idx Url) {
-	artworksDir := filepath.Join(databaser.MakeConfigPath(), "artworks")
+func NewUrl(url string) (idx []Url, err error) {
+	artworksDir := filepath.Join(databaser.MakeConfigPath(), "artwork")
 	tempCmd := exec.Command("yt-dlp", url,
 		"--no-simulate",
-		"--print", "\"%(.{id,title,channel,duration,channel,timestamp,webpage_url_domain})j\"",
+		"--print", "\"%(.{id,title,channel,duration,channel,timestamp,webpage_url_domain,webpage_url})j\"",
 		"--write-thumbnail", "-o", "thumbnail:%(id)s", "--convert-thumbnails", "webp",
 		"--skip-download",
 		"-P", artworksDir,
 	)
+	buf := bytes.Buffer{}
+	tempCmd.Stdout = &buf
 	tempCmd.Stderr = os.Stderr
 
-	out, err := tempCmd.Output()
+	err = tempCmd.Run()
 	if err != nil {
 		println("err running yt-dlp:", err)
 		return
 	}
-	var raw = YtDLPData{}
-	err = json.Unmarshal(out[1:len(out)-2], &raw)
-	if err != nil {
-		log.Println("err parsing yt-dlp:", err, string(out))
-		return
+	lines := bufio.NewScanner(&buf)
+	for lines.Scan() {
+		byt := lines.Bytes()
+		actualLine := byt[1 : len(byt)-1]
+		log.Println(string(actualLine))
+		var ytData YtDLPData
+		err = json.Unmarshal(actualLine, &ytData)
+		if err != nil {
+			log.Println("err unmarshalling yt-dlp data:", err)
+			continue
+		}
+		idx = append(idx, Url{&ytData})
 	}
-
-	idx = Url{url: url, YtDLPData: &raw}
-	log.Println(raw)
 	return
 }
 
 type YtDLPData struct {
-	Id       string `json:"id"`
-	Title    string `json:"title"`
-	Channel  string `json:"channel"`
-	Duration int    `json:"duration"`
-	Domain   string `json:"webpage_url_domain"`
+	Id       string  `json:"id"`
+	Title    string  `json:"title"`
+	Channel  string  `json:"channel"`
+	Duration float64 `json:"duration"`
+	Domain   string  `json:"webpage_url_domain"`
+	Url      string  `json:"webpage_url"`
 }

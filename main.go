@@ -42,6 +42,7 @@ func main() {
 	currentState.AddHandler(func(c *gateway.ReadyEvent) { events.OnReady(c, b) })
 	currentState.AddHandler(func(c *gateway.MessageCreateEvent) { events.OnMessage(c, b) })
 	currentState.AddHandler(func(c *gateway.VoiceStateUpdateEvent) { events.OnVoiceStateUpdate(c, b) })
+	currentState.AddHandler(func(c *gateway.RelationshipAddEvent) { events.OnRelationshipAdd(c, b) })
 
 	// start connection
 	if err := currentState.Open(ctx); err != nil {
@@ -58,7 +59,9 @@ func main() {
 	})
 	ginr.GET("/connected", routes.Connected)
 	ginr.GET("/vcInfo", routes.VcInfo)
-	ginr.GET("/currentSong", routes.CurrentSong)
+	ginr.GET("/queue", routes.GetQueue)
+	ginr.GET("/queue/current", routes.CurrentSong)
+	ginr.POST("/queue/add", routes.PushToQueue)
 	ginr.Static("/artwork", cfg+"/artwork")
 	srv := &http.Server{
 		Addr:    "0.0.0.0:34713",

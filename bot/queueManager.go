@@ -89,8 +89,12 @@ func (qm *QueueManager) Start(ctx context.Context) {
 			switch msg.cmd {
 			case PlaylistAdd:
 				{
+					qm.logger.Debug("adding song to queue", "song", msg.newEntry.GetTitle())
 					qm.playlist = append(qm.playlist, msg.newEntry)
-					qm.Notify <- NewPlaylistMessage(CurrentStart)
+					go func() {
+						qm.Notify <- NewPlaylistMessage(CurrentStart)
+
+					}()
 
 				}
 			case PlaylistRemove:
@@ -149,8 +153,10 @@ func (qm *QueueManager) Start(ctx context.Context) {
 						r, e := qm.player.Play(ctx)
 						if e != nil {
 							qm.logger.Debug("failed to play song, removing song", "error", e)
-							qm.Notify <- NewPlaylistMessage(PlaylistRemove).SetIndex(qm.index)
-							qm.Notify <- NewPlaylistMessage(CurrentStart)
+							go func() {
+								qm.Notify <- NewPlaylistMessage(PlaylistRemove).SetIndex(qm.index)
+								qm.Notify <- NewPlaylistMessage(CurrentStart)
+							}()
 							continue
 						}
 						go qm.WriteData(r)
@@ -174,13 +180,19 @@ func (qm *QueueManager) Start(ctx context.Context) {
 						continue
 					}
 					qm.index++
-					qm.Notify <- NewPlaylistMessage(CurrentStart)
+					go func() {
+						qm.Notify <- NewPlaylistMessage(CurrentStart)
+
+					}()
 				}
 			case Jump:
 				{
 					if qm.GetPlayingState() == PSNotPlaying {
 						qm.index = msg.index
-						qm.Notify <- NewPlaylistMessage(CurrentStart)
+						go func() {
+							qm.Notify <- NewPlaylistMessage(CurrentStart)
+
+						}()
 					} else {
 						qm.index = msg.index - 1
 						qm.player.Stop()
