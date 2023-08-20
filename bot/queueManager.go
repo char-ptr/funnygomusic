@@ -56,12 +56,13 @@ func NewPlaylistMessage(msg PlaylistCmd) *QueueMessage {
 }
 
 type QueueManager struct {
-	b        *Botter
-	playlist []QueueEntry
-	index    int
-	player   Player
-	Notify   chan *QueueMessage
-	logger   *slog.Logger
+	b                *Botter
+	playlist         []QueueEntry
+	playlistDuration int
+	index            int
+	player           Player
+	Notify           chan *QueueMessage
+	logger           *slog.Logger
 }
 
 func NewQueueManager(b *Botter) *QueueManager {

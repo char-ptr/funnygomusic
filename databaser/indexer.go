@@ -8,6 +8,7 @@ import (
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"log"
 	"os"
 	"os/exec"
@@ -112,17 +113,17 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 	i.db.Transaction(func(tx *gorm.DB) error {
 		toCommitSong.Range(func(key, value any) bool {
 			val := value.(IndexedSong)
-			tx.Create(&val)
+			tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&val)
 			return true
 		})
 		toCommitAlbum.Range(func(key, value any) bool {
 			val := value.(IndexedAlbum)
-			tx.Create(&val)
+			tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&val)
 			return true
 		})
 		toCommitArtist.Range(func(key, value any) bool {
 			val := value.(IndexedArtist)
-			tx.Create(&val)
+			tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&val)
 			return true
 		})
 		return nil
