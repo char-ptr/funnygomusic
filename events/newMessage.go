@@ -32,6 +32,7 @@ var (
 		"testvce":   commands.TestVceCommand,
 		"idxdir":    commands.IndexDirCommand,
 		"ua":        commands.UpdateArtworksCommand,
+		"um":        commands.UpdateMeiliCommand,
 	}
 )
 

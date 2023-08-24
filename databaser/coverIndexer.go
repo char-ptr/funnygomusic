@@ -53,7 +53,7 @@ func IndexFileArtwork(path string, id uuid.UUID, wg *sync.WaitGroup, shore *sema
 		slog.Error("Failed to create config path", "error", err)
 		return
 	}
-	savedTo = filepath.Join(writeToFile, id.String())
+	savedTo = filepath.Join(writeToFile, id.String()) + ".webp"
 	exec.Command("ffmpeg", "-i", path, "-an", "-vcodec", "copy", "-f", "image2", savedTo).Run()
 	return
 }

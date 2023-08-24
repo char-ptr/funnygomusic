@@ -16,4 +16,5 @@ func UpdateArtworksCommand(c *gateway.MessageCreateEvent, b *bot.Botter, args []
 		return
 	}
 	databaser.UpdateIndexedArtworks(b.Db)
+	b.SendMessage(c.ChannelID, "ok")
 }

@@ -5,6 +5,7 @@ import (
 	"funnygomusic/databaser"
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/state"
+	"github.com/meilisearch/meilisearch-go"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,7 @@ type Botter struct {
 	AllowList  []string
 	SubChan    discord.ChannelID
 	Db         *gorm.DB
+	Meili      *meilisearch.Client
 }
 
 func NewBotter(s *state.State, ctx *context.Context) *Botter {
@@ -29,7 +31,9 @@ func NewBotter(s *state.State, ctx *context.Context) *Botter {
 		AllowList: []string{},
 		VoiceSes:  &VoiceSessionHndlr{},
 		Db:        databaser.NewDatabase(),
+		Meili:     databaser.NewMeili(),
 	}
+	b.MeiliUpdate()
 	b.Queue = NewQueueManager(b)
 	return b
 

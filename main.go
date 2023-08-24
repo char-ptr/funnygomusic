@@ -59,9 +59,20 @@ func main() {
 	})
 	ginr.GET("/connected", routes.Connected)
 	ginr.GET("/vcInfo", routes.VcInfo)
-	ginr.GET("/queue", routes.GetQueue)
-	ginr.GET("/queue/current", routes.CurrentSong)
-	ginr.POST("/queue/add", routes.PushToQueue)
+	qgroup := ginr.Group("/queue")
+	{
+		qgroup.GET("/skip", routes.SkipSong)
+		qgroup.GET("/pause", routes.PauseSong)
+		qgroup.GET("/resume", routes.ResumeSong)
+		qgroup.GET("/stop", routes.StopSong)
+		qgroup.GET("/clear", routes.ClearQueue)
+		qgroup.POST("/add", routes.PushToQueue)
+		qgroup.GET("/current", routes.CurrentSong)
+		qgroup.GET("/", routes.GetQueue)
+	}
+	//ginr.GET("/queue", routes.GetQueue)
+	//ginr.GET("/queue/current", routes.CurrentSong)
+	//ginr.POST("/queue/add", routes.PushToQueue)
 	ginr.Static("/artwork", cfg+"/artwork")
 	srv := &http.Server{
 		Addr:    "0.0.0.0:34713",

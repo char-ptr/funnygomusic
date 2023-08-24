@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/semaphore"
 	"gorm.io/gorm"
@@ -20,53 +19,59 @@ import (
 type Indexer struct {
 	db          *gorm.DB
 	files       *sync.Map
-	albums      []uuid.UUID
+	albums      []string
 	albumsLock  sync.Mutex
-	artists     []uuid.UUID
+	artists     []string
 	artistsLock sync.Mutex
 }
 
 type IndexedArtist struct {
 	gorm.Model
 	Name string
-	ID   uuid.UUID `gorm:"primaryKey"`
+	ID   string `gorm:"primaryKey"`
 }
 type IndexedAlbum struct {
 	gorm.Model
 	Name    string
 	Genre   string
 	Release string
-	ID      uuid.UUID `gorm:"primaryKey"`
-	Artist  uuid.UUID
+	ID      string `gorm:"primaryKey"`
+	Artist  string
 }
 type IndexedSong struct {
 	gorm.Model
 	Title  string
-	Artist uuid.UUID
-	Album  uuid.UUID
+	Artist string
+	Album  string
 	Track  int
 	File   string
 	Length float64
-	ID     uuid.UUID `gorm:"primaryKey"`
+	ID     string `gorm:"primaryKey"`
 }
 
 type DistinctIndexed struct {
-	artist uuid.UUID
-	album  uuid.UUID
-	file   string
+	Artist string
+	Album  string
+	File   string
 }
 
 func NewIndexer(db *gorm.DB) *Indexer {
-	var disincts []DistinctIndexed
-	db.Raw("select distinct artist,album,file from indexed_songs").Scan(&disincts)
-	var artists []uuid.UUID
-	var albums []uuid.UUID
+	//var distincts []DistinctIndexed
+	rows, _ := db.Raw("select file, iso.album, artist\nfrom indexed_songs iso\n         inner join (select album, min(track) as minTrack\n                     from indexed_songs\n                     group by album) t on iso.album = t.album and iso.track = t.minTrack\n").Rows()
+	defer rows.Close()
+	var artists []string
+	var albums []string
 	files := &sync.Map{}
 	log.Println("get distincts")
-	for _, v := range disincts {
-		artists = append(artists, v.artist)
-		albums = append(albums, v.album)
-		files.Store(v.file, true)
+	for rows.Next() {
+		var v DistinctIndexed
+		//cols, _ := rows.Columns()
+		db.ScanRows(rows, &v)
+		//log.Println("lol", cols)
+		//log.Println("got distinct", v.file, len(v.file))
+		artists = append(artists, v.Artist)
+		albums = append(albums, v.Album)
+		files.Store(v.File, true)
 	}
 	log.Println("got distincts")
 	return &Indexer{
@@ -91,7 +96,7 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 			return nil
 		}
 		_, ok := i.files.Load(path)
-		//log.Println("path:", path, "ok:", ok)
+		log.Println("path:", path, "ok:", ok)
 		if !ok {
 			waiter.Add(1)
 			err := sema.Acquire(ctx, 1)
@@ -99,6 +104,8 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 				log.Println("failed to acquire semaphore:", err)
 			}
 			go i.IndexFile(path, ctx, &toCommitSong, &toCommitAlbum, &toCommitArtist, sema, &waiter)
+		} else {
+			return filepath.SkipDir
 		}
 
 		return nil
@@ -113,7 +120,11 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 	i.db.Transaction(func(tx *gorm.DB) error {
 		toCommitSong.Range(func(key, value any) bool {
 			val := value.(IndexedSong)
-			tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&val)
+			log.Printf("committing song:%#v \n", val)
+			err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&val).Error
+			if err != nil {
+				fmt.Println("failed to commit song:", err)
+			}
 			return true
 		})
 		toCommitAlbum.Range(func(key, value any) bool {
@@ -148,7 +159,7 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 			Name: data.Format.Tags.Artist,
 			ID:   data.Format.Tags.ArtID,
 		}
-		artm.Store(data.Format.Tags.ArtID.String(), newArtist)
+		artm.Store(data.Format.Tags.ArtID, newArtist)
 
 	}
 	i.artistsLock.Unlock()
@@ -162,7 +173,7 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 			ID:      data.Format.Tags.AlbID,
 			Artist:  data.Format.Tags.ArtID,
 		}
-		albm.Store(data.Format.Tags.AlbID.String(), newAlbum)
+		albm.Store(data.Format.Tags.AlbID, newAlbum)
 
 	}
 	i.albumsLock.Unlock()
@@ -181,7 +192,7 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 		Length: parseDuration,
 		ID:     data.Format.Tags.TrkID,
 	}
-	songm.Store(data.Format.Tags.TrkID.String(), newSong)
+	songm.Store(data.Format.Tags.TrkID, newSong)
 	i.files.Store(file, true)
 
 }
@@ -190,15 +201,15 @@ type RawProbeOutput struct {
 	Format struct {
 		Duration string `json:"duration"`
 		Tags     struct {
-			Track  string    `json:"track"`
-			Title  string    `json:"title"`
-			Artist string    `json:"artist"`
-			Album  string    `json:"album"`
-			TrkID  uuid.UUID `json:"musicbrainz_trackid"`
-			AlbID  uuid.UUID `json:"musicbrainz_albumid"`
-			ArtID  uuid.UUID `json:"musicbrainz_artistid"`
-			Date   string    `json:"date"`
-			Genre  string    `json:"genre"`
+			Track  string `json:"track"`
+			Title  string `json:"title"`
+			Artist string `json:"artist"`
+			Album  string `json:"album"`
+			TrkID  string `json:"musicbrainz_trackid"`
+			AlbID  string `json:"musicbrainz_albumid"`
+			ArtID  string `json:"musicbrainz_artistid"`
+			Date   string `json:"date"`
+			Genre  string `json:"genre"`
 		} `json:"tags"`
 	} `json:"format"`
 }

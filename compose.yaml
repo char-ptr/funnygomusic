@@ -1,0 +1,41 @@
+services:
+  discord:
+    restart: unless-stopped
+    depends_on:
+      - db
+      - meili
+    build:
+        context: .
+        dockerfile: Dockerfile
+    environment:
+      - "BOT_TOKEN=${BOT_TOKEN}"
+      - "DB_HOST=db"
+      - DB_USER=postgres
+      - "DB_PASS=${DB_PASS}"
+      - "BOT_OWNER=${BOT_OWNER}"
+      - "MEILI_MASTER_KEY=${MEILI_MASTER_KEY}"
+    volumes:
+      - Y:\data\music:/music
+  db:
+    image: postgres:alpine
+    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    environment:
+      - "POSTGRES_PASSWORD=${DB_PASS}"
+      - POSTGRES_USER=postgres
+    volumes:
+      - Y:\data\dev\docker\pg:/var/lib/postgresql/data
+      - ./dbinit.sql:/docker-entrypoint-initdb.d/init.sql
+  meili:
+    image: getmeili/meilisearch:latest
+    restart: unless-stopped
+    command:
+#      - "--http-addr"
+#      - ""
+    environment:
+        - "MEILI_MASTER_KEY=${MEILI_MASTER_KEY}"
+    ports:
+      - "7700:7700"
+    volumes:
+        - Y:\data\dev\docker\meili:/meili_data

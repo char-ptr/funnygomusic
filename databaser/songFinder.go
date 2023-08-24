@@ -1,7 +1,6 @@
 package databaser
 
 import (
-	"github.com/google/uuid"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"golang.org/x/exp/slices"
 	"gorm.io/gorm"
@@ -12,7 +11,7 @@ import (
 
 type SmolSongData struct {
 	Title  string
-	ID     uuid.UUID
+	ID     string
 	Artist string
 }
 

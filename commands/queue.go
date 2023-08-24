@@ -60,8 +60,12 @@ func ListQueue(c *gateway.MessageCreateEvent, b *bot.Botter, idx int) {
 	} else {
 		startRange = lookFrom - 5
 	}
-	startRange = max(startRange, 0)
 	endRange := min(startRange+10, len(tmpQueue))
+	startRange = max(startRange, 0)
+	overflow := endRange - len(tmpQueue)
+	if overflow > 0 {
+		startRange -= overflow
+	}
 	msgCnt := "queue:```"
 	for k, v := range tmpQueue[startRange:endRange] {
 		actIdx := k + startRange

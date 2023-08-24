@@ -3,7 +3,6 @@ package databaser
 import (
 	"fmt"
 	"gorm.io/driver/postgres"
-	"gorm.io/gorm/logger"
 	"log"
 	"os"
 
@@ -25,7 +24,7 @@ func NewDatabase() *gorm.DB {
 	}
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=music", dbhost, dbuser, dbpass)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		//Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		log.Fatalln("failed to start db", err)
