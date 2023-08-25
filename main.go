@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"funnygomusic/databaser"
 	"funnygomusic/routes"
 	"github.com/gin-gonic/gin"
@@ -79,7 +80,7 @@ func main() {
 		Handler: ginr,
 	}
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalln("failed to listen:", err)
 		}
 	}()

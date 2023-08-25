@@ -1,1 +1,0 @@
-select * from indexed_songs iso where title like concat('%',?1,'%')

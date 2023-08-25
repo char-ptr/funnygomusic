@@ -7,7 +7,9 @@ import (
 	"github.com/hako/durafmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -126,12 +128,14 @@ func (qm *QueueManager) Start(ctx context.Context) {
 				{
 					if qm.GetPlayingState() == PSPlaying {
 						qm.player.Pause()
+						qm.b.VoiceSes.Speaking(false, ctx)
 					}
 				}
 			case CurrentResume:
 				{
 					if qm.GetPlayingState() == PSPaused {
 						r, _ := qm.player.Resume()
+						qm.b.VoiceSes.Speaking(true, ctx)
 						go qm.WriteData(r)
 						go qm.AlertUponEnd()
 					}
@@ -161,8 +165,8 @@ func (qm *QueueManager) Start(ctx context.Context) {
 							continue
 						}
 						go qm.WriteData(r)
-						qm.b.SendMessage(qm.b.SubChan, fmt.Sprintf("Now Playing:\nName: `%s`\nArtist: `%s`\nAlbum: `%s`\nFor `%s`",
-							curr.GetTitle(), curr.GetArtist(), curr.GetAlbum(), durafmt.Parse(time.Duration(curr.GetDuration())*time.Millisecond).LimitFirstN(2)))
+						qm.b.SendMessage(qm.b.SubChan, fmt.Sprintf(">>> **Nоw Plаying**:** **%[5]s `%[1]s`\nArtіst:** **%[5]s `%[2]s`\n%[5]sAlbum:** **%[5]s `%[3]s`%[5]s\nFоr `%[4]s`",
+							curr.GetTitle(), curr.GetArtist(), curr.GetAlbum(), durafmt.Parse(time.Duration(curr.GetDuration())*time.Millisecond).LimitFirstN(2), strings.Repeat("​", randInt(0, 5))))
 						go qm.AlertUponEnd()
 					}
 
@@ -228,7 +232,7 @@ func (qm *QueueManager) WriteData(reader io.Reader) {
 	if qm.GetPlayingState() == PSComplete {
 		qm.Notify <- NewPlaylistMessage(SongEnded)
 	} else {
-		qm.logger.Debug("Song ended, but not complete")
+		qm.logger.Debug("Song ended, but not complete(2)")
 	}
 }
 
@@ -256,4 +260,7 @@ func (qm *QueueManager) GetPlayingState() PlayingState {
 		return PSNotPlaying
 	}
 	return qm.player.State()
+}
+func randInt(min, max int) int {
+	return min + rand.Intn(max-min)
 }
