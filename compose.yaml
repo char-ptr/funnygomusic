@@ -7,8 +7,17 @@ services:
       - db
       - meili
     build:
-        context: .
+        context: ./bot
         dockerfile: Dockerfile
+        additional_contexts:
+          - ./commands
+          - ./databaser
+          - ./events
+          - ./routes
+          - ./utils
+          - ./go.mod
+          - ./go.sum
+          - ./main.go
     environment:
       - "BOT_TOKEN=${BOT_TOKEN}"
       - "DB_HOST=db"
