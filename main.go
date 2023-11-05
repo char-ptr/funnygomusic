@@ -87,4 +87,6 @@ func main() {
 	defer srv.Close()
 	log.Println("Blocking, press ctrl+c to continue...")
 	<-ctx.Done()
+	log.Println("Shutting down... going to save queue")
+	//b.Queue.SaveQueue()
 }

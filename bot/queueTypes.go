@@ -12,7 +12,7 @@ type QueueEntry interface {
 	GetAlbum() string
 	GetArtist() string
 	GetDuration() int
-
+	GetID() string
 	GetPlayer() Player
 }
 type Player interface {

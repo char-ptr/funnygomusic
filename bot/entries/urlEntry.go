@@ -35,6 +35,9 @@ func (l *Url) GetDuration() int {
 func (l *Url) GetPlayer() bot.Player {
 	return players.NewYoutubePlayer(l.Url)
 }
+func (l *Url) GetID() string {
+	return l.Id
+}
 
 func NewUrl(url string) (idx []Url, err error) {
 	artworksDir := filepath.Join(databaser.MakeConfigPath(), "artwork")

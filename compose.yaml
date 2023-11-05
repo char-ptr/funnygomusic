@@ -1,6 +1,8 @@
 services:
   discord:
     restart: unless-stopped
+    ports:
+      - "34713:34713"
     depends_on:
       - db
       - meili
@@ -16,6 +18,7 @@ services:
       - "MEILI_MASTER_KEY=${MEILI_MASTER_KEY}"
     volumes:
       - Y:\data\music:/music
+      - X:\Media\sound:/sound
   db:
     image: postgres:alpine
     restart: unless-stopped
@@ -25,7 +28,7 @@ services:
       - "POSTGRES_PASSWORD=${DB_PASS}"
       - POSTGRES_USER=postgres
     volumes:
-      - Y:\data\dev\docker\pg:/var/lib/postgresql/data
+      - Y:\data\dev\docker\pg-fgm:/var/lib/postgresql/data
       - ./dbinit.sql:/docker-entrypoint-initdb.d/init.sql
   meili:
     image: getmeili/meilisearch:latest
@@ -38,4 +41,4 @@ services:
     ports:
       - "7700:7700"
     volumes:
-        - Y:\data\dev\docker\meili:/meili_data
+        - Y:\data\dev\docker\meili-fgm:/meili_data

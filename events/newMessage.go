@@ -27,6 +27,7 @@ var (
 		"seek":      commands.SeekCommand,
 		"jump":      commands.JumpCommand,
 		"song-info": commands.SongInfoCommand,
+		"np":        commands.SongInfoCommand,
 		"allow":     commands.AllowCommand,
 		"restart":   commands.RestartCommand,
 		"testvce":   commands.TestVceCommand,

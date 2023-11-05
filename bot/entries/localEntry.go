@@ -14,6 +14,7 @@ type Local struct {
 	artist   string
 	album    string
 	duration int
+	ID       string
 }
 
 func (l *Local) GetTitle() string {
@@ -30,6 +31,9 @@ func (l *Local) GetDuration() int {
 }
 func (l *Local) GetPlayer() bot.Player {
 	return players.NewFilePlayer(l.f)
+}
+func (l *Local) GetID() string {
+	return ""
 }
 func NewLocalEntry(ffprobe databaser.RawProbeOutput, path string) *Local {
 	parseDuration, err := strconv.ParseFloat(ffprobe.Format.Duration, 64)

@@ -58,13 +58,12 @@ func NewPlaylistMessage(msg PlaylistCmd) *QueueMessage {
 }
 
 type QueueManager struct {
-	b                *Botter
-	playlist         []QueueEntry
-	playlistDuration int
-	index            int
-	player           Player
-	Notify           chan *QueueMessage
-	logger           *slog.Logger
+	b        *Botter
+	playlist []QueueEntry
+	index    int
+	player   Player
+	Notify   chan *QueueMessage
+	logger   *slog.Logger
 }
 
 func NewQueueManager(b *Botter) *QueueManager {
@@ -254,6 +253,13 @@ func (qm *QueueManager) GetEntries() []QueueEntry {
 func (qm *QueueManager) GetIndex() int {
 	return qm.index
 }
+func (qm *QueueManager) GetDuration() (dur time.Duration) {
+
+	for _, entry := range qm.playlist[qm.index:] {
+		dur += time.Duration(entry.GetDuration()) * time.Millisecond
+	}
+	return
+}
 
 func (qm *QueueManager) GetPlayingState() PlayingState {
 	if qm.player == nil {
@@ -264,3 +270,11 @@ func (qm *QueueManager) GetPlayingState() PlayingState {
 func randInt(min, max int) int {
 	return min + rand.Intn(max-min)
 }
+
+//func (qm *QueueManager) SaveQueue(db *gorm.DB) {
+//	var entries []string
+//	for _, entry := range qm.playlist {
+//		entries = append(entries, entry.GetID())
+//	}
+//	db.Model().Create(&entries)
+//}

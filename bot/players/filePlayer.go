@@ -80,6 +80,7 @@ func (f *File) Play(ctx context.Context) (io.Reader, error) {
 		"ss":             fmt.Sprintf("%dms", f.position),
 		"c:a":            "libopus",
 		"b:a":            "96k",
+		//"filter:a":       "volume=30",
 	}).WithOutput(pw)
 	go func() {
 		err := ffip.Run()
@@ -115,6 +116,7 @@ func (f *File) Resume() (io.Reader, error) {
 func (f *File) Seek(ms int) (io.Reader, error) {
 	f.position = ms
 	if f.state == bot.PSPlaying {
+		f.state = bot.PSRestart
 		f.pwer.Close()
 		//f.ff.Context.Done()
 	}
