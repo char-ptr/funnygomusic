@@ -4,24 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/exp/slices"
-	"golang.org/x/sync/semaphore"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"sync"
+
+	"golang.org/x/exp/slices"
+	"golang.org/x/sync/semaphore"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Indexer struct {
 	db          *gorm.DB
 	files       *sync.Map
 	albums      []string
-	albumsLock  sync.Mutex
 	artists     []string
+	albumsLock  sync.Mutex
 	artistsLock sync.Mutex
 }
 
@@ -43,10 +44,10 @@ type IndexedSong struct {
 	Title  string
 	Artist string
 	Album  string
-	Track  int
 	File   string
-	Length float64
 	ID     string `gorm:"primaryKey"`
+	Track  int
+	Length float64
 }
 
 type DistinctIndexed struct {
@@ -56,7 +57,7 @@ type DistinctIndexed struct {
 }
 
 func NewIndexer(db *gorm.DB) *Indexer {
-	//var distincts []DistinctIndexed
+	// var distincts []DistinctIndexed
 	rows, _ := db.Raw("select file, iso.album, artist\nfrom indexed_songs iso\n         inner join (select album, min(track) as minTrack\n                     from indexed_songs\n                     group by album) t on iso.album = t.album and iso.track = t.minTrack\n").Rows()
 	defer rows.Close()
 	var artists []string
@@ -65,10 +66,10 @@ func NewIndexer(db *gorm.DB) *Indexer {
 	log.Println("get distincts")
 	for rows.Next() {
 		var v DistinctIndexed
-		//cols, _ := rows.Columns()
+		// cols, _ := rows.Columns()
 		db.ScanRows(rows, &v)
-		//log.Println("lol", cols)
-		//log.Println("got distinct", v.file, len(v.file))
+		// log.Println("lol", cols)
+		// log.Println("got distinct", v.file, len(v.file))
 		artists = append(artists, v.Artist)
 		albums = append(albums, v.Album)
 		files.Store(v.File, true)
@@ -83,6 +84,7 @@ func NewIndexer(db *gorm.DB) *Indexer {
 		albumsLock:  sync.Mutex{},
 	}
 }
+
 func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 	sema := semaphore.NewWeighted(60)
 	waiter := sync.WaitGroup{}
@@ -140,7 +142,6 @@ func (i *Indexer) IndexDirectory(dir string, ctx context.Context) {
 		return nil
 	})
 	log.Println("done indexing directory")
-
 }
 
 func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, albm *sync.Map, artm *sync.Map, sema *semaphore.Weighted, waiter *sync.WaitGroup) {
@@ -153,7 +154,7 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 	}
 	i.artistsLock.Lock()
 
-	if slices.Contains(i.artists, data.Format.Tags.ArtID) == false {
+	if !slices.Contains(i.artists, data.Format.Tags.ArtID) {
 		i.artists = append(i.artists, data.Format.Tags.ArtID)
 		newArtist := IndexedArtist{
 			Name: data.Format.Tags.Artist,
@@ -164,7 +165,7 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 	}
 	i.artistsLock.Unlock()
 	i.albumsLock.Lock()
-	if slices.Contains(i.albums, data.Format.Tags.AlbID) == false {
+	if !slices.Contains(i.albums, data.Format.Tags.AlbID) {
 		i.albums = append(i.albums, data.Format.Tags.AlbID)
 		newAlbum := IndexedAlbum{
 			Name:    data.Format.Tags.Album,
@@ -194,7 +195,6 @@ func (i *Indexer) IndexFile(file string, ctx context.Context, songm *sync.Map, a
 	}
 	songm.Store(data.Format.Tags.TrkID, newSong)
 	i.files.Store(file, true)
-
 }
 
 type RawProbeOutput struct {
@@ -215,7 +215,7 @@ type RawProbeOutput struct {
 }
 
 func FetchDataForFile(file string, ctx context.Context) (RawProbeOutput, error) {
-	//println("fetching data for file:", file)
+	// println("fetching data for file:", file)
 	cmd := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
 		"-show_entries", "format=duration:format_tags=track,title,artist,album,musicbrainz_trackid,musicbrainz_albumid,musicbrainz_artistid,date,genre",
@@ -228,11 +228,11 @@ func FetchDataForFile(file string, ctx context.Context) (RawProbeOutput, error) 
 		println("err running ffprobe:", err)
 		return RawProbeOutput{}, err
 	}
-	var raw = RawProbeOutput{}
+	raw := RawProbeOutput{}
 	err = json.Unmarshal(out, &raw)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "err parsing ffprobe:", err, string(out))
-		//println("err parsing ffprobe:", err)
+		// println("err parsing ffprobe:", err)
 		return RawProbeOutput{}, err
 	}
 	return raw, nil

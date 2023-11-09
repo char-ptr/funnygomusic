@@ -2,13 +2,14 @@ package bot
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/diamondburned/arikawa/v3/discord"
 	"github.com/diamondburned/arikawa/v3/voice"
 	"github.com/diamondburned/arikawa/v3/voice/udp"
 	"github.com/diamondburned/arikawa/v3/voice/voicegateway"
 	"github.com/pkg/errors"
-	"log"
-	"time"
 )
 
 type VoiceSessionUser struct {
@@ -20,9 +21,9 @@ type VoiceSessionUser struct {
 }
 type VoiceSessionHndlr struct {
 	vs        *voice.Session
+	Users     []VoiceSessionUser `json:"users"`
 	GuildId   discord.GuildID    `json:"guild_id"`
 	ChannelID discord.ChannelID  `json:"channel_id"`
-	Users     []VoiceSessionUser `json:"users"`
 }
 
 func NewVoiceSessionUser(vste *discord.VoiceState, b *Botter) VoiceSessionUser {
@@ -61,6 +62,7 @@ func (v *VoiceSessionHndlr) AttachVoiceSession(vs *voice.Session) {
 	//	}
 	//})
 }
+
 func (v *VoiceSessionHndlr) JoinedChannel(chn *discord.ChannelID, gld *discord.GuildID) {
 	v.GuildId = *gld
 	v.ChannelID = *chn
@@ -74,7 +76,7 @@ func (v *VoiceSessionHndlr) UpdateUsers(b *Botter) {
 		return
 	}
 	for _, state := range vstates {
-		if state.ChannelID != state.ChannelID {
+		if state.ChannelID != v.ChannelID {
 			continue
 		}
 		v.Users = append(v.Users, NewVoiceSessionUser(&state, b))
@@ -106,6 +108,7 @@ func (v *VoiceSessionHndlr) JoinUsersVc(b *Botter, gld discord.GuildID, uid disc
 func (v *VoiceSessionHndlr) Open() bool {
 	return v.vs != nil
 }
+
 func (v *VoiceSessionHndlr) Leave(ctx context.Context) {
 	v.vs.Leave(ctx)
 	v.ChannelID = discord.ChannelID(0)
@@ -113,6 +116,7 @@ func (v *VoiceSessionHndlr) Leave(ctx context.Context) {
 	v.Users = nil
 	v.vs = nil
 }
+
 func (v *VoiceSessionHndlr) HasUser(uid discord.UserID) bool {
 	for _, user := range v.Users {
 		if user.ID == uid {
@@ -121,6 +125,7 @@ func (v *VoiceSessionHndlr) HasUser(uid discord.UserID) bool {
 	}
 	return false
 }
+
 func (v *VoiceSessionHndlr) DeleteUser(uid discord.UserID) {
 	for k, user := range v.Users {
 		if user.ID == uid {
@@ -129,6 +134,7 @@ func (v *VoiceSessionHndlr) DeleteUser(uid discord.UserID) {
 		}
 	}
 }
+
 func (v *VoiceSessionHndlr) GetUser(uid discord.UserID) *VoiceSessionUser {
 	for _, user := range v.Users {
 		if user.ID == uid {
@@ -137,6 +143,7 @@ func (v *VoiceSessionHndlr) GetUser(uid discord.UserID) *VoiceSessionUser {
 	}
 	return nil
 }
+
 func (v *VoiceSessionHndlr) UpdateUser(uid discord.UserID, user *VoiceSessionUser) {
 	for k, u := range v.Users {
 		if u.ID == uid {
@@ -145,9 +152,11 @@ func (v *VoiceSessionHndlr) UpdateUser(uid discord.UserID, user *VoiceSessionUse
 		}
 	}
 }
+
 func (v *VoiceSessionHndlr) AddUser(user *VoiceSessionUser) {
 	v.Users = append(v.Users, *user)
 }
+
 func (v *VoiceSessionHndlr) Speaking(isSpeaking bool, ctx context.Context) {
 	if !v.Open() {
 		return

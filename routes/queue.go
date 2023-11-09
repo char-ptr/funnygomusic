@@ -5,67 +5,75 @@ import (
 	_ "embed"
 	"funnygomusic/bot"
 	"funnygomusic/bot/entries"
-	"github.com/gin-gonic/gin"
 	"log"
+
+	"github.com/gin-gonic/gin"
 )
 
 func CurrentSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	c.JSON(200, bot.GetTypedEntry(b.Queue.GetCurrentSong()))
 }
+
 func GetQueue(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	c.JSON(200, gin.H{"queue": b.Queue.GetEntries(), "index": b.Queue.GetIndex(), "length": len(b.Queue.GetEntries())})
 }
+
 func ClearQueue(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.PlaylistClear)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func SkipSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentSkip)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func PauseSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentPause)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func ResumeSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentResume)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func StopSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentStop)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func SeekSong(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 	}
 	var seek struct {
@@ -79,9 +87,10 @@ func SeekSong(c *gin.Context) {
 	b.Queue.Notify <- bot.NewPlaylistMessage(bot.CurrentSkip).SetSeek(seek.Position)
 	c.JSON(200, gin.H{"ok": "ok"})
 }
+
 func PushToQueue(c *gin.Context) {
 	b := c.MustGet("bot").(*bot.Botter)
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		c.JSON(200, nil)
 		return
 	}

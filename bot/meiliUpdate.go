@@ -1,9 +1,10 @@
 package bot
 
 import (
+	"log"
+
 	"github.com/lib/pq"
 	"gorm.io/gorm"
-	"log"
 )
 
 type IndexedSongExt struct {
@@ -13,24 +14,23 @@ type IndexedSongExt struct {
 	Album    string
 	AlbumID  string
 	ArtistID string
-	Track    int
 	File     string
-	Length   float64
 	ID       string `gorm:"primaryKey"`
+	Track    int
+	Length   float64
 }
 type AlbumExt struct {
 	gorm.Model
 	Name     string
 	Artist   string
 	ArtistID string
-	Tracks   pq.StringArray `gorm:"type:text[]"`
 	ID       string         `gorm:"primaryKey"`
+	Tracks   pq.StringArray `gorm:"type:text[]"`
 }
 
 func (b *Botter) MeiliUpdate() {
-
 	sidx := b.Meili.Index("songs")
-	//aridx := b.Meili.Index("artists")
+	// aridx := b.Meili.Index("artists")
 	alidx := b.Meili.Index("albums")
 	var all_songs []IndexedSongExt
 	var all_albums []AlbumExt

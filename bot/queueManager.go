@@ -3,14 +3,15 @@ package bot
 import (
 	"context"
 	"fmt"
-	"github.com/diamondburned/oggreader"
-	"github.com/hako/durafmt"
 	"io"
 	"log/slog"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/diamondburned/oggreader"
+	"github.com/hako/durafmt"
 )
 
 type PlaylistCmd int
@@ -35,35 +36,38 @@ const (
 )
 
 type QueueMessage struct {
+	newEntry QueueEntry
 	cmd      PlaylistCmd
 	index    int
 	seek     int
-	newEntry QueueEntry
 }
 
 func (p *QueueMessage) SetIndex(idx int) *QueueMessage {
 	p.index = idx
 	return p
 }
+
 func (p *QueueMessage) SetSeek(seek int) *QueueMessage {
 	p.seek = seek
 	return p
 }
+
 func (p *QueueMessage) SetEntry(entry QueueEntry) *QueueMessage {
 	p.newEntry = entry
 	return p
 }
+
 func NewPlaylistMessage(msg PlaylistCmd) *QueueMessage {
 	return &QueueMessage{cmd: msg}
 }
 
 type QueueManager struct {
-	b        *Botter
-	playlist []QueueEntry
-	index    int
 	player   Player
+	b        *Botter
 	Notify   chan *QueueMessage
 	logger   *slog.Logger
+	playlist []QueueEntry
+	index    int
 }
 
 func NewQueueManager(b *Botter) *QueueManager {
@@ -79,7 +83,6 @@ func NewQueueManager(b *Botter) *QueueManager {
 		Notify:   make(chan *QueueMessage, 10),
 		logger:   logger,
 	}
-
 }
 
 func (qm *QueueManager) Start(ctx context.Context) {
@@ -95,7 +98,6 @@ func (qm *QueueManager) Start(ctx context.Context) {
 					qm.playlist = append(qm.playlist, msg.newEntry)
 					go func() {
 						qm.Notify <- NewPlaylistMessage(CurrentStart)
-
 					}()
 
 				}
@@ -186,7 +188,6 @@ func (qm *QueueManager) Start(ctx context.Context) {
 					qm.index++
 					go func() {
 						qm.Notify <- NewPlaylistMessage(CurrentStart)
-
 					}()
 				}
 			case Jump:
@@ -195,18 +196,17 @@ func (qm *QueueManager) Start(ctx context.Context) {
 						qm.index = msg.index
 						go func() {
 							qm.Notify <- NewPlaylistMessage(CurrentStart)
-
 						}()
 					} else {
 						qm.index = msg.index - 1
 						qm.player.Stop()
 					}
-
 				}
 			}
 		}
 	}
 }
+
 func (qm *QueueManager) AlertUponEnd() {
 	err := qm.player.WaitTillEnd()
 	if err != nil {
@@ -218,6 +218,7 @@ func (qm *QueueManager) AlertUponEnd() {
 		qm.logger.Debug("Song ended, but not complete")
 	}
 }
+
 func (qm *QueueManager) WriteData(reader io.Reader) {
 	qm.logger.Debug("piping data -> ogg -> discord voice")
 	if err := oggreader.DecodeBuffered(qm.b.VoiceSes.GetSession(), reader); err != nil {
@@ -241,20 +242,23 @@ func (qm *QueueManager) GetCurrentSong() *QueueEntry {
 	}
 	return &qm.playlist[qm.index]
 }
+
 func (qm *QueueManager) GetCurrentSongTime() time.Duration {
 	if qm.player == nil {
 		return time.Duration(0)
 	}
 	return qm.player.PositionDuration()
 }
+
 func (qm *QueueManager) GetEntries() []QueueEntry {
 	return qm.playlist
 }
+
 func (qm *QueueManager) GetIndex() int {
 	return qm.index
 }
-func (qm *QueueManager) GetDuration() (dur time.Duration) {
 
+func (qm *QueueManager) GetDuration() (dur time.Duration) {
 	for _, entry := range qm.playlist[qm.index:] {
 		dur += time.Duration(entry.GetDuration()) * time.Millisecond
 	}
@@ -267,6 +271,7 @@ func (qm *QueueManager) GetPlayingState() PlayingState {
 	}
 	return qm.player.State()
 }
+
 func randInt(min, max int) int {
 	return min + rand.Intn(max-min)
 }

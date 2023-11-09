@@ -2,9 +2,10 @@ package databaser
 
 import (
 	"fmt"
-	"gorm.io/driver/postgres"
 	"log"
 	"os"
+
+	"gorm.io/driver/postgres"
 
 	"gorm.io/gorm"
 )
@@ -22,12 +23,13 @@ func NewDatabase() *gorm.DB {
 	if !pok {
 		log.Fatalln("no db pass")
 	}
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=music", dbhost, dbuser, dbpass)
+	dsn := fmt.Sprintf("host=%s user=%s password=%s", dbhost, dbuser, dbpass)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		//Logger: logger.Default.LogMode(logger.Info),
+		// Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
-		log.Fatalln("failed to start db", err)
+		log.Printf("failed to start db %+v", err)
+		os.Exit(1)
 	}
 
 	db.AutoMigrate(&AllowedUser{}, &IndexedArtist{}, &IndexedAlbum{}, &IndexedSong{})

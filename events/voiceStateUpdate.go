@@ -2,11 +2,12 @@ package events
 
 import (
 	"funnygomusic/bot"
+
 	"github.com/diamondburned/arikawa/v3/gateway"
 )
 
 func OnVoiceStateUpdate(c *gateway.VoiceStateUpdateEvent, b *bot.Botter) {
-	if b.VoiceSes.Open() == false {
+	if !b.VoiceSes.Open() {
 		return
 	}
 	if u := b.VoiceSes.GetUser(c.UserID); u != nil {
